@@ -1,0 +1,46 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import api from '../../lib/api';
+import { setAccessToken, setRefreshToken } from '../../lib/auth';
+import { User, LoginPayload, RegisterPayload, LoginResponse } from '../../types';
+import { AxiosError } from 'axios';
+
+export const useLogin = () => {
+  return useMutation({
+    mutationFn: async (data: LoginPayload) => {
+      const response = await api.post<LoginResponse>('auth/login/', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setAccessToken(data.access);
+      setRefreshToken(data.refresh);
+    },
+  });
+};
+
+export const useRegister = () => {
+  return useMutation({
+    mutationFn: async (data: RegisterPayload) => {
+      // The API might return 200 with an error object like { "email": ["..."] }
+      // We need to handle this manually since axios won't throw for 200.
+      const response = await api.post('auth/users/', data);
+      
+      // Check if response data contains email error array
+      if (response.data && response.data.email && Array.isArray(response.data.email)) {
+         throw new Error(response.data.email[0]);
+      }
+      
+      return response.data;
+    },
+  });
+};
+
+export const useMe = () => {
+  return useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const response = await api.get<User>('auth/users/me/');
+      return response.data;
+    },
+    retry: false, // Don't retry if 401/403, just fail so we can redirect or show login
+  });
+};

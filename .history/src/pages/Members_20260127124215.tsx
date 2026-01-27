@@ -1,16 +1,18 @@
-import { AddMemberDialog } from '@/components/dialogs/AddMemberDialog';
-import { MemberProfileDialog } from '@/components/dialogs/MemberProfileDialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { mockMembers } from '@/data/mockData';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
-import { useUsers } from '@/features/auth/hooks';
-import { toast } from '@/hooks/use-toast';
 import { Member } from '@/types';
-import { CalendarCheck, Crown, Eye, Loader2, Mail, Search, TrendingUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { MemberProfileDialog } from '@/components/dialogs/MemberProfileDialog';
+import { Search, Users, Mail, TrendingUp, CalendarCheck, Star, Crown, Eye, Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { toast } from '@/hooks/use-toast';
+import { useUsers } from '@/features/auth/hooks';
+import { AddMemberDialog } from '@/components/dialogs/AddMemberDialog';
 
 export default function Members() {
   const { user } = useAuth();
@@ -18,13 +20,13 @@ export default function Members() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
+  
   // Use real data from API
   const { data: apiUsers, isLoading, error } = useUsers();
-  
+
   // Transform API users to Member type
   const members: Member[] = useMemo(() => {
-    if (!apiUsers || !Array.isArray(apiUsers)) return [];
+    if (!apiUsers) return [];
     return apiUsers.map(u => ({
       id: u.id.toString(),
       name: `${u.first_name} ${u.last_name}`,
@@ -37,8 +39,7 @@ export default function Members() {
       // You might want to map role/committee here too if needed
     }));
   }, [apiUsers]);
-  console.log(members);
-  
+
   const handleToggleBestMember = (id: string) => {
     // This functionality requires an API endpoint to update "isBest" status
     // For now, we'll just show a toast that it's not implemented yet
@@ -56,15 +57,14 @@ export default function Members() {
 
   const handleSaveNotes = (memberId: string, notes: string) => {
     // Requires API endpoint to save notes
-    toast({
+     toast({
       title: "Not Implemented",
       description: "Saving notes requires backend support.",
       variant: "destructive"
     });
   };
 
-  const filteredMembers = members
-  .filter(
+  const filteredMembers = members.filter(
     (member) =>
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -73,19 +73,19 @@ export default function Members() {
   const bestMember = members.find((m) => m.isBest);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
-    )
+      return (
+          <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+      )
   }
 
   if (error) {
-    return (
-      <div className="text-center text-red-500">
-        Failed to load members. Please try again later.
-      </div>
-    )
+       return (
+          <div className="text-center text-red-500">
+              Failed to load members. Please try again later.
+          </div>
+      )
   }
 
   return (
@@ -99,16 +99,16 @@ export default function Members() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <div className="relative w-full sm:w-auto">
+            <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search members..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 w-full sm:w-64"
+                placeholder="Search members..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-full sm:w-64"
             />
-          </div>
-          {isAdmin && <AddMemberDialog onSuccess={() => { }} />}
+            </div>
+            {isAdmin && <AddMemberDialog onSuccess={() => {}} />}
         </div>
       </div>
 

@@ -1,8 +1,8 @@
+import React, { createContext, useContext, ReactNode } from 'react';
+import { User, UserRole } from '@/types';
 import { useLogin, useMe } from '@/features/auth/hooks';
-import { clearTokens, getAccessToken } from '@/lib/auth';
-import { User } from '@/types';
+import { clearTokens } from '@/lib/auth';
 import { useQueryClient } from '@tanstack/react-query';
-import { createContext, ReactNode, useContext, useState } from 'react';
 
 interface AuthContextType {
   user: User | undefined;
@@ -15,30 +15,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Track token existence locally to force re-evaluation of useMe
-  const [hasToken, setHasToken] = useState(() => !!getAccessToken());
-
-  const { data: user, isLoading: isUserLoading } = useMe({ enabled: hasToken });
+  const { data: user, isLoading } = useMe();
   const loginMutation = useLogin();
   const queryClient = useQueryClient();
 
   const login = async (email: string, password: string) => {
     // We ignore 'role' as it's determined by the backend based on credentials
     await loginMutation.mutateAsync({ email, password });
-    setHasToken(true);
   };
 
   const logout = () => {
     clearTokens();
-    setHasToken(false);
     queryClient.removeQueries(); // Clear all cache
     // Optionally redirect or force state update
     queryClient.setQueryData(['me'], null);
   };
-
-  // If we don't have a token, we aren't loading, we're just unauthenticated.
-  // If we do have a token, we are loading until useMe finishes.
-  const isLoading = hasToken && isUserLoading;
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, isLoading }}>

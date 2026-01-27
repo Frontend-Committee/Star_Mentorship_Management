@@ -18,7 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Track token existence locally to force re-evaluation of useMe
   const [hasToken, setHasToken] = useState(() => !!getAccessToken());
 
-  const { data: user, isLoading: isUserLoading } = useMe({ enabled: hasToken });
+  const { data: user, isLoading } = useMe({ enabled: hasToken });
   const loginMutation = useLogin();
   const queryClient = useQueryClient();
 
@@ -35,10 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Optionally redirect or force state update
     queryClient.setQueryData(['me'], null);
   };
-
-  // If we don't have a token, we aren't loading, we're just unauthenticated.
-  // If we do have a token, we are loading until useMe finishes.
-  const isLoading = hasToken && isUserLoading;
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, isLoading }}>
