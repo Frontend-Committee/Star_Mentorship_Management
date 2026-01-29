@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Menu,
   X,
+  ListTodo,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -27,16 +28,19 @@ const memberNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: BookOpen, label: 'Weeks', path: '/weeks' },
   { icon: FolderKanban, label: 'Projects', path: '/projects' },
+  { icon: ListTodo, label: 'Tasks', path: '/tasks' },
   { icon: CalendarCheck, label: 'Attendance', path: '/attendance' },
   { icon: Bell, label: 'Announcements', path: '/announcements' },
   { icon: MessageSquare, label: 'Feedback', path: '/feedback' },
   { icon: Users, label: 'Profile', path: '/profile' },
+  { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
 const adminNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: BookOpen, label: 'Content', path: '/weeks' },
   { icon: FolderKanban, label: 'Projects', path: '/projects' },
+  { icon: ListTodo, label: 'Tasks', path: '/tasks' },
   { icon: CalendarCheck, label: 'Attendance', path: '/attendance' },
   { icon: Bell, label: 'Announcements', path: '/announcements' },
   { icon: Users, label: 'Members', path: '/members' },
@@ -98,107 +102,107 @@ function SidebarContent({
         ))}
       </nav>
 
-      {/* User Section */}
-      <div className="p-3 border-t border-sidebar-border">
+      {/* Footer */}
+      <div className="p-3 mt-auto space-y-3">
         {!isCollapsed && (
-          <div className="flex items-center gap-3 p-2 mb-2">
-            <Avatar className="w-9 h-9">
-              <AvatarFallback className="bg-sidebar-accent text-sidebar-foreground text-sm">
-                {user?.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="overflow-hidden">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {user?.name}
-              </p>
-              <p className="text-xs text-sidebar-foreground/60 capitalize truncate">
-                {user?.role}
-              </p>
-            </div>
+          <div className="px-3 py-2 text-xs font-medium text-sidebar-foreground/40 uppercase tracking-wider">
+            Account
           </div>
         )}
-        <div
-          className={cn(
-            'flex items-center gap-2',
-            isCollapsed ? 'justify-center' : 'justify-between'
+        
+        <div className={cn(
+          "flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent/50 border border-sidebar-border",
+          isCollapsed && "justify-center p-0 w-10 h-10 rounded-full border-none bg-transparent"
+        )}>
+          <Avatar className="w-8 h-8 border-2 border-background shadow-sm shrink-0">
+            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xs font-bold">
+              {user?.first_name?.[0]}
+              {user?.last_name?.[0]}
+            </AvatarFallback>
+          </Avatar>
+          {!isCollapsed && (
+            <div className="flex-1 overflow-hidden">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
+                {user?.first_name} {user?.last_name}
+              </p>
+              <p className="text-xs text-sidebar-foreground/60 truncate">
+                {user?.email}
+              </p>
+            </div>
           )}
-        >
-          <Button
-            variant="ghost"
-            className={cn(
-              'flex-1 justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
-              isCollapsed && 'justify-center flex-none'
-            )}
-            onClick={logout}
-          >
-            <LogOut className="w-5 h-5 shrink-0" />
-            {!isCollapsed && <span>Sign out</span>}
-          </Button>
-          {!isCollapsed && <ThemeToggle />}
         </div>
+
+        <div className="flex gap-2">
+           {!isCollapsed && <div className="flex-1"><ThemeToggle /></div>}
+           <Button
+             variant="ghost"
+             size="icon"
+             className={cn("text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10", !isCollapsed && "shrink-0")}
+             onClick={logout}
+             title="Sign out"
+           >
+             <LogOut className="w-5 h-5" />
+           </Button>
+        </div>
+        {isCollapsed && (
+            <div className="flex justify-center mt-2">
+                <ThemeToggle />
+            </div>
+        )}
       </div>
     </div>
   );
 }
 
-export default function Sidebar() {
+export function Sidebar({ 
+    open, 
+    setOpen,
+    isCollapsed,
+    setIsCollapsed
+}: { 
+    open: boolean; 
+    setOpen: (open: boolean) => void;
+    isCollapsed: boolean;
+    setIsCollapsed: (collapsed: boolean) => void;
+}) {
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Close mobile menu on route change
   useEffect(() => {
-    setIsMobileOpen(false);
-  }, [location.pathname]);
+    setOpen(false);
+  }, [location.pathname, setOpen]);
 
   return (
     <>
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-sidebar border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-sidebar-primary to-accent">
-            <Star className="w-5 h-5 text-sidebar-primary-foreground" />
-          </div>
-          <h1 className="font-heading font-bold text-sidebar-foreground">STAR</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-sidebar-foreground">
-                <Menu className="w-6 h-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64 bg-sidebar border-sidebar-border">
-              <SidebarContent
-                isCollapsed={false}
-                onNavClick={() => setIsMobileOpen(false)}
-              />
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
+      {/* Mobile Sidebar */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="left" className="p-0 w-[280px] bg-sidebar border-r border-sidebar-border">
+          <SidebarContent isCollapsed={false} onNavClick={() => setOpen(false)} />
+        </SheetContent>
+      </Sheet>
 
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 flex-col',
-          isCollapsed ? 'w-16' : 'w-64'
+          "hidden lg:flex flex-col h-screen sticky top-0 bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out",
+          isCollapsed ? "w-[80px]" : "w-[280px]"
         )}
       >
-        <SidebarContent isCollapsed={isCollapsed} onCollapse={() => setIsCollapsed(!isCollapsed)} />
-
+        <SidebarContent isCollapsed={isCollapsed} />
+        
         {/* Collapse Toggle */}
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full border border-border bg-background shadow-sm text-muted-foreground hover:text-foreground hidden lg:flex"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 bg-sidebar border border-sidebar-border rounded-full flex items-center justify-center text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors"
         >
           {isCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3 h-3" />
           ) : (
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3 h-3" />
           )}
-        </button>
+        </Button>
       </aside>
     </>
   );

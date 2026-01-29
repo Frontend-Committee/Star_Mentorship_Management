@@ -21,7 +21,7 @@ export default function Members() {
 
   // Use real data from API
   const { data: apiUsers, isLoading, error } = useUsers();
-  
+
   // Transform API users to Member type
   const members: Member[] = useMemo(() => {
     if (!apiUsers || !Array.isArray(apiUsers)) return [];
@@ -37,8 +37,7 @@ export default function Members() {
       // You might want to map role/committee here too if needed
     }));
   }, [apiUsers]);
-  console.log(members);
-  
+
   const handleToggleBestMember = (id: string) => {
     // This functionality requires an API endpoint to update "isBest" status
     // For now, we'll just show a toast that it's not implemented yet
@@ -63,8 +62,7 @@ export default function Members() {
     });
   };
 
-  const filteredMembers = members
-  .filter(
+  const filteredMembers = members.filter(
     (member) =>
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.email.toLowerCase().includes(searchQuery.toLowerCase())
