@@ -1,13 +1,20 @@
 export type UserRole = 'admin' | 'member';
 
 export interface User {
-  id: number; // API uses integer ID usually, but user said "id" in response example. Assuming number or string. Let's assume number based on typical Django setup, but user example didn't specify type. Let's use string | number or just number if sure. Django default is number. User example response: { id, first_name ... }. Let's assume number for now, or string if UUID. Given "pythonanywhere", likely default AutoField (int).
+  id: number;
   first_name: string;
   last_name: string;
   email: string;
-  role: UserRole; // assuming backend returns 'admin' or 'member' strings
+  role: UserRole;
   committee: string;
   created_at: string;
+}
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
 
 export interface LoginPayload {
