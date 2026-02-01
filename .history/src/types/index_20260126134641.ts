@@ -10,23 +10,6 @@ export interface User {
   created_at: string;
 }
 
-export interface LoginPayload {
-  email: string;
-  password: string;
-}
-
-export interface RegisterPayload {
-  first_name: string;
-  last_name: string;
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  refresh: string;
-  access: string;
-}
-
 // Keeping existing interfaces for now to prevent breaking existing UI, but marking them as potentially legacy if they conflict.
 // The user provided specific requirements for new integration.
 
