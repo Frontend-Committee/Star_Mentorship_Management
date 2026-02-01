@@ -20,10 +20,12 @@ import {
   Star,
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useAnnouncements } from '@/features/announcements/hooks';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const { data: announcements = [] } = useAnnouncements();
 
   const currentWeek = mockWeekContent.find((w) => !w.isCompleted) || mockWeekContent[0];
 
@@ -32,7 +34,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="space-y-1 sm:space-y-2 animate-fade-in">
         <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground">
-          Welcome back, {user?.name?.split(' ')[0]}!
+          Welcome back, {user?.first_name}!
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           {isAdmin
@@ -182,7 +184,7 @@ export default function Dashboard() {
 
         {/* Right Column - Announcements */}
         <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <AnnouncementCard announcements={mockAnnouncements} />
+          <AnnouncementCard announcements={announcements} />
         </div>
       </div>
     </div>

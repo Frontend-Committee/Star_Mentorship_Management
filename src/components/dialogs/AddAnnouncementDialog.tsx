@@ -15,16 +15,12 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
+import { AnnouncementCreatePayload } from '@/types';
+
 interface AddAnnouncementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddAnnouncement: (announcement: {
-    title: string;
-    content: string;
-    isPinned: boolean;
-    deadline?: string;
-    author: string;
-  }) => void;
+  onAddAnnouncement: (announcement: AnnouncementCreatePayload) => void;
 }
 
 export function AddAnnouncementDialog({
@@ -43,24 +39,20 @@ export function AddAnnouncementDialog({
     e.preventDefault();
     
     if (!title.trim() || !content.trim()) {
-      toast.error('Title and content are required');
+      toast.error('Title and description are required');
       return;
     }
 
     onAddAnnouncement({
       title: title.trim(),
-      content: content.trim(),
-      isPinned,
-      deadline: hasDeadline && deadline ? deadline : undefined,
-      author: user?.name || 'Admin',
+      description: content.trim(),
+      is_pinned: isPinned,
     });
 
     // Reset form
     setTitle('');
     setContent('');
     setIsPinned(false);
-    setHasDeadline(false);
-    setDeadline('');
     onOpenChange(false);
     toast.success('Announcement created successfully');
   };
@@ -85,7 +77,7 @@ export function AddAnnouncementDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="content">Content *</Label>
+            <Label htmlFor="content">Description *</Label>
             <Textarea
               id="content"
               placeholder="Write your announcement here..."
@@ -106,33 +98,6 @@ export function AddAnnouncementDialog({
               checked={isPinned}
               onCheckedChange={setIsPinned}
             />
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg border border-border">
-              <div className="space-y-0.5">
-                <Label htmlFor="hasDeadline" className="cursor-pointer">Add Deadline</Label>
-                <p className="text-xs text-muted-foreground">
-                  Set a deadline for this announcement
-                </p>
-              </div>
-              <Switch
-                id="hasDeadline"
-                checked={hasDeadline}
-                onCheckedChange={setHasDeadline}
-              />
-            </div>
-            {hasDeadline && (
-              <div className="space-y-2">
-                <Label htmlFor="deadline">Deadline Date</Label>
-                <Input
-                  id="deadline"
-                  type="date"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
