@@ -24,6 +24,7 @@ import {
   Users
 } from 'lucide-react';
 import { useMemo } from 'react';
+import { useAnnouncements } from '@/features/announcements/hooks';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -137,6 +138,7 @@ export default function Dashboard() {
       completedWeeks
     };
   }, [isAdmin, memberAttendance, memberTasks, memberSubmissions]);
+  const { data: announcements = [] } = useAnnouncements();
 
   const currentWeek = mockWeekContent.find((w) => !w.isCompleted) || mockWeekContent[0];
 
@@ -298,7 +300,7 @@ export default function Dashboard() {
 
         {/* Right Column - Announcements */}
         <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <AnnouncementCard announcements={mockAnnouncements} />
+          <AnnouncementCard announcements={announcements} />
         </div>
       </div>
     </div>

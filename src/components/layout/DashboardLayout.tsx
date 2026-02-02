@@ -24,7 +24,7 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-4 bg-background/80 backdrop-blur-md border-b h-16">
         <div className="flex items-center gap-2">
@@ -48,8 +48,7 @@ export default function DashboardLayout() {
       {/* Add padding-top on mobile for the fixed header */}
       <main
         className={cn(
-          "pt-16 lg:pt-0 transition-all duration-300",
-          isCollapsed ? "lg:pl-[80px]" : "lg:pl-[280px]"
+          "flex-1 pt-16 lg:pt-0 transition-all duration-300"
         )}
       >
         <div className="p-4 sm:p-6 lg:p-8">

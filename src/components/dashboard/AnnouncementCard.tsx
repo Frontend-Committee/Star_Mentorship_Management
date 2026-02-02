@@ -12,10 +12,12 @@ interface AnnouncementCardProps {
 export default function AnnouncementCard({ announcements }: AnnouncementCardProps) {
   const navigate = useNavigate();
   
-  const sortedAnnouncements = [...announcements].sort((a, b) => {
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  const announcementsArray = Array.isArray(announcements) ? announcements : [];
+
+  const sortedAnnouncements = [...announcementsArray].sort((a, b) => {
+    if (a.is_pinned && !b.is_pinned) return -1;
+    if (!a.is_pinned && b.is_pinned) return 1;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   return (
@@ -35,7 +37,7 @@ export default function AnnouncementCard({ announcements }: AnnouncementCardProp
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <div className="flex items-start gap-3">
-              {announcement.isPinned && (
+              {announcement.is_pinned && (
                 <Pin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               )}
               <div className="flex-1 space-y-2">
@@ -43,21 +45,15 @@ export default function AnnouncementCard({ announcements }: AnnouncementCardProp
                   <h4 className="font-medium text-foreground">
                     {announcement.title}
                   </h4>
-                  {announcement.isPinned && (
+                  {announcement.is_pinned && (
                     <Badge variant="secondary" className="shrink-0">
                       Pinned
                     </Badge>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                  {announcement.content}
+                  {announcement.description}
                 </p>
-                {announcement.deadline && (
-                  <div className="flex items-center gap-1.5 text-sm text-primary">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Due: {new Date(announcement.deadline).toLocaleDateString()}</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>

@@ -127,13 +127,19 @@ export interface LegacyUser {
 }
 
 export interface Announcement {
-  id: string;
+  id: number;
   title: string;
-  content: string;
-  isPinned: boolean;
-  deadline?: string;
-  createdAt: string;
-  author: string;
+  description: string;
+  is_pinned: boolean;
+  link?: string | null;
+  created_at: string;
+  author_name?: string; // Optional if not provided by API directly
+}
+
+export interface AnnouncementCreatePayload {
+  title: string;
+  description: string;
+  is_pinned?: boolean;
 }
 
 export interface WeekContent {

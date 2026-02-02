@@ -37,10 +37,8 @@ export function EditAnnouncementDialog({
   useEffect(() => {
     if (announcement) {
       setTitle(announcement.title);
-      setContent(announcement.content);
-      setIsPinned(announcement.isPinned);
-      setHasDeadline(!!announcement.deadline);
-      setDeadline(announcement.deadline ? announcement.deadline.split('T')[0] : '');
+      setContent(announcement.description);
+      setIsPinned(announcement.is_pinned);
     }
   }, [announcement]);
 
@@ -57,9 +55,8 @@ export function EditAnnouncementDialog({
     onSave({
       ...announcement,
       title: title.trim(),
-      content: content.trim(),
-      isPinned,
-      deadline: hasDeadline && deadline ? deadline : undefined,
+      description: content.trim(),
+      is_pinned: isPinned,
     });
 
     onOpenChange(false);
@@ -86,7 +83,7 @@ export function EditAnnouncementDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-content">Content *</Label>
+            <Label htmlFor="edit-content">Description *</Label>
             <Textarea
               id="edit-content"
               placeholder="Write your announcement here..."
@@ -107,32 +104,6 @@ export function EditAnnouncementDialog({
               checked={isPinned}
               onCheckedChange={setIsPinned}
             />
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg border border-border">
-              <div className="space-y-0.5">
-                <Label htmlFor="edit-hasDeadline" className="cursor-pointer">Add Deadline</Label>
-                <p className="text-xs text-muted-foreground">
-                  Set a deadline for this announcement
-                </p>
-              </div>
-              <Switch
-                id="edit-hasDeadline"
-                checked={hasDeadline}
-                onCheckedChange={setHasDeadline}
-              />
-            </div>
-            {hasDeadline && (
-              <div className="space-y-2">
-                <Label htmlFor="edit-deadline">Deadline Date</Label>
-                <Input
-                  id="edit-deadline"
-                  type="date"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                />
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
