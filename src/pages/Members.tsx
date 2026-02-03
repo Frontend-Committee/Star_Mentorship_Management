@@ -31,8 +31,7 @@ export default function Members() {
       progress: u.week_progress || 0,
       attendance: u.session_attendance || 0,
       isBest: false,
-      assignmentsSubmitted: 0,
-      projectsCompleted: 0,
+      tasksSubmitted: 0,
     }));
   }, [response]);
   
@@ -196,7 +195,7 @@ export default function Members() {
                   </div>
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-secondary/50">
                     <TrendingUp className="w-3.5 h-3.5 text-accent" />
-                    <span>{member.assignmentsSubmitted} Done</span>
+                    <span>{member.tasksSubmitted} Tasks</span>
                   </div>
                 </div>
               </div>
