@@ -14,7 +14,7 @@ import { useUpdateAttendance } from '@/features/sessions/hooks';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Attendance, Session } from '@/types';
-import { Calendar, Check, Clock, DollarSign, Edit, MapPin, Trash2, X } from 'lucide-react';
+import { Calendar, Check, Clock, DollarSign, Edit, Globe, MapPin, Trash2, UsersIcon, X } from 'lucide-react';
 
 interface SessionDetailsDialogProps {
   open: boolean;
@@ -89,7 +89,22 @@ export function SessionDetailsDialog({ open, onOpenChange, session, onEdit, onDe
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
-              <span className="font-medium">{session.location}</span>
+              <span className="font-medium truncate max-w-[200px]" title={session.location}>
+                {session.location}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {session.type === 'online' ? (
+                <>
+                  <Globe className="w-4 h-4 text-blue-500" />
+                  <span className="font-medium text-blue-600 dark:text-blue-400">Online Session</span>
+                </>
+              ) : (
+                <>
+                  <UsersIcon className="w-4 h-4 text-orange-500" />
+                  <span className="font-medium text-orange-600 dark:text-orange-400">Offline Session</span>
+                </>
+              )}
             </div>
           </div>
           {session.note && (

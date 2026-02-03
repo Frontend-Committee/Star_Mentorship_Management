@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 // import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Weeks from "./pages/Weeks";
@@ -33,6 +35,8 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               {/* Signup route removed as registration is admin-only */}
               
               {/* Dashboard Routes */}

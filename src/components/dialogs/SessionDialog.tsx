@@ -9,7 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Session, SessionCreatePayload } from '@/types';
+import { Globe, Users } from 'lucide-react';
 
 interface SessionDialogProps {
   open: boolean;
@@ -31,6 +39,7 @@ export function SessionDialog({
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [location, setLocation] = useState('');
+  const [type, setType] = useState<'online' | 'offline'>('offline');
   const [note, setNote] = useState('');
 
   // Pre-fill form when session changes (edit mode)
@@ -41,6 +50,7 @@ export function SessionDialog({
       setStartTime(session.start_time);
       setEndTime(session.end_time);
       setLocation(session.location);
+      setType(session.type || 'offline');
       setNote(session.note || '');
     } else {
       // Reset for create mode
@@ -49,6 +59,7 @@ export function SessionDialog({
       setStartTime('');
       setEndTime('');
       setLocation('');
+      setType('offline');
       setNote('');
     }
   }, [session, open]);
@@ -63,6 +74,7 @@ export function SessionDialog({
       start_time: startTime,
       end_time: endTime,
       location: location.trim(),
+      type,
       note: note.trim(),
     });
   };
@@ -86,6 +98,7 @@ export function SessionDialog({
               required
             />
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
@@ -98,16 +111,42 @@ export function SessionDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="location">Location / URL</Label>
-              <Input
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Room 101 or Zoom Link"
-                required
-              />
+              <Label htmlFor="type">Session Type</Label>
+              <Select value={type} onValueChange={(val: 'online' | 'offline') => setType(val)}>
+                <SelectTrigger id="type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="offline">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-orange-500" />
+                      <span>Offline (In-person)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="online">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-blue-500" />
+                      <span>Online (Remote)</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location">
+              {type === 'online' ? 'Meeting Link (URL)' : 'Location / Room'}
+            </Label>
+            <Input
+              id="location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder={type === 'online' ? 'https://zoom.us/j/...' : 'e.g., Room 101'}
+              required
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start_time">Start Time</Label>
@@ -130,6 +169,7 @@ export function SessionDialog({
               />
             </div>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="note">Note (Optional)</Label>
             <Textarea
@@ -140,6 +180,7 @@ export function SessionDialog({
               rows={3}
             />
           </div>
+
           <div className="flex justify-end gap-3 pt-4">
             <Button 
               type="button" 

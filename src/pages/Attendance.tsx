@@ -23,7 +23,9 @@ import {
   Loader2,
   MapPin,
   Plus,
-  XCircle
+  XCircle,
+  Globe,
+  Users as UsersIcon
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -177,11 +179,26 @@ export default function Attendance() {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CalendarCheck className="w-4 h-4" />
-                    <span>
-                      {new Date(session.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <CalendarCheck className="w-4 h-4" />
+                      <span>
+                        {new Date(session.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {session.type === 'online' ? (
+                        <>
+                          <Globe className="w-3.5 h-3.5 text-blue-500" />
+                          <span className="text-blue-600 dark:text-blue-400 font-medium">Online</span>
+                        </>
+                      ) : (
+                        <>
+                          <UsersIcon className="w-3.5 h-3.5 text-orange-500" />
+                          <span className="text-orange-600 dark:text-orange-400 font-medium">Offline</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>

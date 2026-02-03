@@ -1,10 +1,13 @@
+import { useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/context/AuthContext';
-import { Settings as SettingsIcon, Bell, Shield, Palette } from 'lucide-react';
+import { useSetPassword } from '@/features/auth/hooks';
+import { Settings as SettingsIcon, Bell, Shield, Palette, Lock, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -151,6 +154,108 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Security - Change Password */}
+      <ChangePasswordSection />
     </div>
+  );
+}
+
+function ChangePasswordSection() {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const setPasswordMutation = useSetPassword();
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords don't match");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters long");
+      return;
+    }
+
+    try {
+      await setPasswordMutation.mutateAsync({
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      toast.success("Password changed successfully");
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      toast.error(err.message || "Failed to change password");
+    }
+  };
+
+  return (
+    <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.25s' }}>
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Lock className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <CardTitle>Security</CardTitle>
+            <CardDescription>Update your password to keep your account secure</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Current Password</Label>
+            <Input 
+              id="current-password" 
+              type="password" 
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New Password</Label>
+            <Input 
+              id="new-password" 
+              type="password" 
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <Input 
+              id="confirm-password" 
+              type="password" 
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+          <Button 
+            type="submit" 
+            disabled={setPasswordMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            {setPasswordMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              'Update Password'
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
