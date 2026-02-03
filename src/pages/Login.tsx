@@ -13,8 +13,10 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoading } = useAuth();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +26,8 @@ export default function Login() {
       setError('Please enter both email and password');
       return;
     }
+
+    setLoading(true);
 
     try {
       await login(email, password);
@@ -43,6 +47,7 @@ export default function Login() {
         setError('An error occurred during login. Please try again.');
       }
     }
+    setLoading(false);
   };
 
   return (
@@ -147,8 +152,8 @@ export default function Login() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                  {isLoading ? (
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Signing in...
