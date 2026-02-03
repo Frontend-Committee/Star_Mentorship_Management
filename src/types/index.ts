@@ -179,8 +179,7 @@ export interface Member {
   progress: number;
   attendance: number;
   isBest: boolean;
-  assignmentsSubmitted: number;
-  projectsCompleted: number;
+  tasksSubmitted: number;
   adminNotes?: string;
 }
 

@@ -18,7 +18,6 @@ import {
   TrendingUp, 
   CalendarCheck, 
   FileText, 
-  FolderKanban, 
   Star,
   StickyNote,
   Save
@@ -139,25 +138,14 @@ export function MemberProfileDialog({
               </span>
             </div>
 
-            {/* Assignments Submitted */}
-            <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+            {/* Tasks Completed */}
+            <div className="p-4 rounded-lg bg-muted/50 border border-border/50 col-span-2">
               <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-4 h-4 text-green-500" />
-                <span className="text-sm font-medium text-muted-foreground">Assignments</span>
+                <FileText className="w-4 h-4 text-purple-500" />
+                <span className="text-sm font-medium text-muted-foreground">Tasks</span>
               </div>
               <span className="text-lg font-bold text-foreground">
-                {member.assignmentsSubmitted ?? 0} submitted
-              </span>
-            </div>
-
-            {/* Projects Completed */}
-            <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
-              <div className="flex items-center gap-2 mb-2">
-                <FolderKanban className="w-4 h-4 text-purple-500" />
-                <span className="text-sm font-medium text-muted-foreground">Projects</span>
-              </div>
-              <span className="text-lg font-bold text-foreground">
-                {member.projectsCompleted ?? 0} completed
+                {member.tasksSubmitted ?? 0} submitted
               </span>
             </div>
           </div>
