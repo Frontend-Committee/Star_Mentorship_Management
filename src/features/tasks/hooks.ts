@@ -3,6 +3,7 @@ import api from '@/lib/api';
 import {
   Feedback,
   FeedbackCreatePayload,
+  Task,
   TaskCreatePayload,
   TaskDetail,
   TaskSubmissionDetail,
@@ -68,7 +69,6 @@ export const useCreateTask = () => {
           .join(', ');
       }
       toast(errorMessage);
-      console.error("Unknown error:", error);
     }
   });
 };

@@ -24,7 +24,6 @@ export default function TasksListPage() {
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
 
   const handleCreateTask = (taskData: TaskCreatePayload) => {
-    console.log(taskData);
     createTask(taskData, {
       onSuccess: () => {
         toast.success("Task created successfully");

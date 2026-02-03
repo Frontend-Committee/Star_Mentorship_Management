@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { useUsers } from '@/features/auth/hooks';
+import { useCommitteeMembers } from '@/features/members/hooks';
 import { Task, TaskCreatePayload } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -35,7 +35,7 @@ export function TaskDialog({
   const [date, setDate] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
 
-  const { data: users, isLoading: isLoadingUsers } = useUsers();
+  const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
 
   useEffect(() => {
     if (task) {

@@ -53,7 +53,6 @@ export function AddMemberDialog({ onSuccess }: AddMemberDialogProps) {
       
       onSuccess?.();
     } catch (error: any) {
-      console.error('Failed to create member', error);
       toast.error(error.message || 'Failed to create member');
     }
   };

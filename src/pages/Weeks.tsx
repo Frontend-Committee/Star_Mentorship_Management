@@ -67,7 +67,6 @@ export default function Weeks() {
   // Transform API data to UI format, or use mock data as fallback
   const weeks = useMemo<WeekContent[]>(() => {
     if (useMockData) {
-      console.log('Using mock data - API endpoint not available yet');
       return mockWeekContent;
     }
 
@@ -109,7 +108,6 @@ export default function Weeks() {
   };
 
   const handleMarkIncomplete = (weekId: string) => {
-    console.log('Mark incomplete:', weekId);
   };
 
   const handleDeleteWeek = async () => {

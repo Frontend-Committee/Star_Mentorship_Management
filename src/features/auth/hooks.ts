@@ -137,7 +137,6 @@ export const useUsers = () => {
         
         return users;
       } catch (error) {
-        console.error('Failed to fetch users, falling back to mock data:', error);
         return mockMembers.map(m => ({
           id: parseInt(m.id),
           first_name: m.name.split(' ')[0],

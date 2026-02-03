@@ -74,8 +74,6 @@ export default function Attendance() {
           setIsSessionDialogOpen(false);
         },
         onError: (error: any) => {
-          console.log({ sessionData });
-
           const errorMessage = error.response?.data
             ? Object.entries(error.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
             : "Failed to create session";
