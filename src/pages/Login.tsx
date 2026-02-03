@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Star, Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -28,13 +28,19 @@ export default function Login() {
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login failed', err);
       // Handle 401 specifically or generic error
-      if (err.response?.status === 401) {
-         setError('Invalid credentials. Please check your email and password.');
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { status?: number } };
+        if (axiosError.response?.status === 401) {
+          setError('Invalid credentials. Please check your email and password.');
+        } else {
+          const errorWithMessage = err as { message?: string };
+          setError(errorWithMessage.message || 'An error occurred during login. Please try again.');
+        }
       } else {
-         setError(err.message || 'An error occurred during login. Please try again.');
+        setError('An error occurred during login. Please try again.');
       }
     }
   };
@@ -47,8 +53,8 @@ export default function Login() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.2),transparent_50%)]" />
         
         <div className="relative z-10 text-center space-y-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-glow">
-            <Star className="w-12 h-12 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-32 h-32 rounded-2xl bg-white/10 backdrop-blur-sm shadow-glow">
+            <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-35 h-35 object-contain" />
           </div>
           
           <div className="space-y-4">
@@ -87,8 +93,8 @@ export default function Login() {
         <div className="w-full max-w-md space-y-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           {/* Mobile Logo */}
           <div className="lg:hidden text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-accent shadow-glow">
-              <Star className="w-8 h-8 text-primary-foreground" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-white/10 backdrop-blur-sm shadow-glow">
+              <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-14 h-14 object-contain" />
             </div>
             <h1 className="text-2xl font-heading font-bold">STAR Mentorship</h1>
           </div>

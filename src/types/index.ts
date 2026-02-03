@@ -92,6 +92,131 @@ export interface AnnouncementCreatePayload {
   is_pinned?: boolean;
 }
 
+// Member Minimal (for nested responses)
+export interface MemberMinimal {
+  email?: string;
+  first_name?: string;
+  id?: number;
+  last_name?: string;
+  [property: string]: any;
+}
+
+// Week Progress tracking for individual items
+export interface WeekProgress {
+  id?: number;
+  is_finished?: boolean;
+  notes?: null | string;
+  user?: MemberMinimal;
+  [property: string]: any;
+}
+
+// Week Item (resource within a week - Member View)
+// Typically shows progress for the current user
+export interface WeekItem {
+  id?: number;
+  notes?: null | string;
+  resource?: null | string; // Resource URL
+  title: string;
+  week_progress?: WeekProgress[];
+  [property: string]: any;
+}
+
+// Week Item Admin Detail (GET admin/items/{id}/)
+// Shows progress for all assigned users
+export interface WeekItemAdminDetail {
+  id?: number;
+  week?: number; // Added week ID
+  notes?: string | null;
+  resource?: string | null;
+  title: string;
+  users?: {
+    user: number;
+    user_details?: MemberMinimal;
+  }[];
+  week_progress?: WeekProgress[]; // Array of progress for all users
+}
+
+// Member-specific progress (GET member/weeks/)
+export interface MemberProgress {
+  id?: number;
+  is_finished?: boolean;
+  notes?: null | string;
+  [property: string]: any;
+}
+
+export interface MemberProgressUpdate {
+  is_finished?: boolean;
+  notes?: null | string;
+  [property: string]: any;
+}
+
+export interface MemberItem {
+  id?: number;
+  notes?: string;
+  resource?: string;
+  title?: string;
+  week_progress?: MemberProgress[];
+  [property: string]: any;
+}
+
+export interface MemberWeekDetail {
+  end_date?: Date;
+  id?: number;
+  items?: MemberItem[];
+  number?: number;
+  start_date?: Date;
+  title?: string;
+  [property: string]: any;
+}
+
+// Week Detail (GET admin/weeks/ and GET weeks/{id}/)
+export interface WeekDetail {
+  committee?: number;
+  end_date: Date;
+  id?: number;
+  week_items?: WeekItem[];
+  number: number; // Unique week number
+  start_date: Date;
+  title: string;
+  [property: string]: any;
+}
+
+export interface PaginatedWeekList {
+  count?: number;
+  next?: null | string;
+  previous?: null | string;
+  results?: WeekDetail[];
+  [property: string]: any;
+}
+
+// Week Create/Update Payload
+export interface WeekCreatePayload {
+  end_date?: string | Date;
+  number?: number;
+  start_date?: string | Date;
+  title?: string;
+  [property: string]: any;
+}
+
+// Progress Create Payload (POST admin/progress/)
+export interface ProgressCreatePayload {
+  is_finished?: boolean;
+  notes?: string;
+  user: number;
+  week_item: number;
+  [property: string]: any;
+}
+
+// Week Item Create Payload (POST admin/items/)
+export interface WeekItemCreatePayload {
+  notes?: string | null;
+  resource?: string | null;
+  title: string;
+  users: { user: number }[]; // Required by backend
+  week: number; // Week ID
+}
+
+// Legacy interface for backward compatibility with existing UI
 export interface WeekContent {
   id: string;
   weekNumber: number;
@@ -106,6 +231,7 @@ export interface WeekContent {
   isCompleted: boolean;
   assignmentSubmitted?: boolean;
   assignmentLink?: string;
+  items?: WeekItem[];
 }
 
 export interface Project {
