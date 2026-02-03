@@ -1,15 +1,18 @@
-import { useState } from 'react';
-import { mockProjects } from '@/data/mockData';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { AddProjectDialog } from '@/components/dialogs/AddProjectDialog';
 import { ProjectDetailsDialog } from '@/components/dialogs/ProjectDetailsDialog';
-import { Project } from '@/types';
+import { Project, Task } from '@/types';
 import { FolderKanban, Star, Clock, CheckCircle, AlertCircle, Plus, MessageSquare } from 'lucide-react';
+import { useAdminTasks, useCreateTask, useMemberTasks } from '@/features/tasks/hooks';
+import { useSubmissions } from '@/features/submissions/hooks';
+import { SubmissionSkeleton } from '@/components/submissions/SubmissionSkeleton';
+import { toast } from 'sonner';
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; icon: React.FC<any>; color: string }> = {
   pending: { label: 'Pending', icon: Clock, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   submitted: { label: 'Submitted', icon: AlertCircle, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
   reviewed: { label: 'Reviewed', icon: CheckCircle, color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
@@ -18,28 +21,54 @@ const statusConfig = {
 export default function Projects() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  
+  const { data: adminTasks = [], isLoading: isLoadingAdmin } = useAdminTasks({ enabled: isAdmin });
+  const { data: memberTasks = [], isLoading: isLoadingMember } = useMemberTasks({ enabled: !isAdmin });
+  const { data: submissions = [], isLoading: isLoadingSubs } = useSubmissions();
+  const createTask = useCreateTask();
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Project | null>(null);
 
-  const handleAddProject = (newProject: { title: string; description: string }) => {
-    const project: Project = {
-      id: `project-${Date.now()}`,
-      title: newProject.title,
-      description: newProject.description,
-      status: 'pending',
-    };
-    setProjects([...projects, project]);
+  const isLoading = isAdmin ? isLoadingAdmin : (isLoadingMember || isLoadingSubs);
+
+  const projects = useMemo<Project[]>(() => {
+    const baseTasks = isAdmin ? adminTasks : memberTasks;
+    
+    return baseTasks.map(task => {
+      const submission = submissions.find(s => s.task.id === task.id);
+      
+      let status: 'pending' | 'submitted' | 'reviewed' = 'pending';
+      if (submission) {
+        status = submission.feedback ? 'reviewed' : 'submitted';
+      }
+
+      return {
+        id: task.id.toString(),
+        title: task.title,
+        description: task.description,
+        status,
+        submittedAt: submission?.submitted_at,
+        feedback: submission?.feedback?.note,
+      };
+    });
+  }, [isAdmin, adminTasks, memberTasks, submissions]);
+
+  const handleAddProject = async (newProject: { title: string; description: string }) => {
+    try {
+      await createTask.mutateAsync({
+        title: newProject.title,
+        description: newProject.description,
+        date: new Date().toISOString().split('T')[0]
+      });
+    } catch (error) {
+      // Error handled by hook
+    }
   };
 
-  const handleToggleBestProject = (id: string) => {
-    setProjects(
-      projects.map((p) => ({
-        ...p,
-        isBest: p.id === id ? !p.isBest : false,
-      }))
-    );
-  };
+  if (isLoading) {
+    return <SubmissionSkeleton />;
+  }
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -72,9 +101,7 @@ export default function Projects() {
           return (
             <Card
               key={project.id}
-              className={`border-border/50 hover-lift animate-fade-in ${
-                project.isBest ? 'border-amber-400/50 bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10' : ''
-              }`}
+              className="border-border/50 hover-lift animate-fade-in"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <CardHeader className="pb-3">
@@ -83,29 +110,11 @@ export default function Projects() {
                     <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                       <FolderKanban className="w-4 h-4 text-primary" />
                     </div>
-                    {project.isBest && (
-                      <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 shrink-0">
-                        <Star className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 fill-amber-500" />
-                      </div>
-                    )}
                   </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleBestProject(project.id)}
-                        title={project.isBest ? 'Remove Best Project' : 'Mark as Best Project'}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Star className={`w-4 h-4 ${project.isBest ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
-                      </Button>
-                    )}
-                    <Badge className={`${status.color} text-xs`}>
-                      <StatusIcon className="w-3 h-3 mr-1" />
-                      <span className="hidden sm:inline">{status.label}</span>
-                    </Badge>
-                  </div>
+                  <Badge className={`${status.color} text-xs`}>
+                    <StatusIcon className="w-3 h-3 mr-1" />
+                    <span className="hidden sm:inline">{status.label}</span>
+                  </Badge>
                 </div>
                 <CardTitle className="text-base sm:text-lg font-heading mt-3 break-words">{project.title}</CardTitle>
               </CardHeader>
@@ -123,22 +132,8 @@ export default function Projects() {
                     <div className="flex items-center gap-2 mb-2">
                       <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
                       <span className="text-xs font-medium text-primary">Feedback</span>
-                      {project.grade && (
-                        <Badge variant="secondary" className="ml-auto text-xs">
-                          {project.grade}
-                        </Badge>
-                      )}
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{project.feedback}</p>
-                  </div>
-                )}
-
-                {project.isBest && (
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800">
-                    <Star className="w-4 h-4 text-amber-600 fill-amber-500 shrink-0" />
-                    <span className="text-xs sm:text-sm font-medium text-amber-700 dark:text-amber-400">
-                      Best Project
-                    </span>
                   </div>
                 )}
 
@@ -153,7 +148,7 @@ export default function Projects() {
                       Review
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setSelectedProject(project)}>
+                  <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setSelectedTask(project)}>
                     Details
                   </Button>
                 </div>
@@ -161,20 +156,23 @@ export default function Projects() {
             </Card>
           );
         })}
+        {projects.length === 0 && (
+          <div className="col-span-full py-12 text-center text-muted-foreground">
+            No projects found.
+          </div>
+        )}
       </div>
 
-      {/* Add Project Dialog */}
       <AddProjectDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onAddProject={handleAddProject}
       />
 
-      {/* Project Details Dialog */}
       <ProjectDetailsDialog
-        project={selectedProject}
-        open={!!selectedProject}
-        onOpenChange={(open) => !open && setSelectedProject(null)}
+        project={selectedTask}
+        open={!!selectedTask}
+        onOpenChange={(open) => !open && setSelectedTask(null)}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 import { getAccessToken, setAccessToken, setRefreshToken } from '../../lib/auth';
-import { LoginPayload, LoginResponse, RegisterPayload, User } from '../../types';
+import { LoginPayload, LoginResponse, RegisterPayload, ResetPasswordConfirmPayload, ResetPasswordPayload, SetPasswordPayload, User } from '../../types';
 
 export const useLogin = () => {
   const queryClient = useQueryClient();
@@ -105,49 +105,47 @@ export const useUser = (id: number) => {
   });
 };
 
-import { mockMembers } from '../../data/mockData';
-
 export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      try {
-        const response = await api.get<any>('auth/users/');
-        
-        let users: User[] = [];
-        if (response.data && Array.isArray(response.data.results)) {
-          users = response.data.results as User[];
-        } else if (Array.isArray(response.data)) {
-          users = response.data as User[];
-        }
-        
-        // If API returns successfully but with no users, fallback to mock data for demo
-        if (users.length === 0) {
-          return mockMembers.map(m => ({
-            id: parseInt(m.id),
-            first_name: m.name.split(' ')[0],
-            last_name: m.name.split(' ')[1] || '',
-            email: m.email,
-            role: 'member' as const,
-            committee: null,
-            created_at: new Date().toISOString(),
-            img: null
-          })) as User[];
-        }
-        
-        return users;
-      } catch (error) {
-        return mockMembers.map(m => ({
-          id: parseInt(m.id),
-          first_name: m.name.split(' ')[0],
-          last_name: m.name.split(' ')[1] || '',
-          email: m.email,
-          role: 'member' as const,
-          committee: null,
-          created_at: new Date().toISOString(),
-          img: null
-        })) as User[];
+      const response = await api.get<any>('auth/users/');
+      
+      let users: User[] = [];
+      if (response.data && Array.isArray(response.data.results)) {
+        users = response.data.results as User[];
+      } else if (Array.isArray(response.data)) {
+        users = response.data as User[];
       }
+      
+      return users;
     }
+  });
+};
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: async (data: ResetPasswordPayload) => {
+      const response = await api.post('auth/users/reset_password/', data);
+      return response.data;
+    },
+  });
+};
+
+export const useResetPasswordConfirm = () => {
+  return useMutation({
+    mutationFn: async (data: ResetPasswordConfirmPayload) => {
+      const response = await api.post('auth/users/reset_password_confirm/', data);
+      return response.data;
+    },
+  });
+};
+
+export const useSetPassword = () => {
+  return useMutation({
+    mutationFn: async (data: SetPasswordPayload) => {
+      const response = await api.post('auth/users/set_password/', data);
+      return response.data;
+    },
   });
 };

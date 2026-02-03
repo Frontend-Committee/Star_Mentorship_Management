@@ -5,11 +5,6 @@ import WeeklyTaskCard from '@/components/dashboard/WeeklyTaskCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/context/AuthContext';
-import {
-  mockAnnouncements,
-  mockMemberProgress,
-  mockWeekContent
-} from '@/data/mockData';
 import { useUsers } from '@/features/auth/hooks';
 import { useAdminSessions, useMemberAttendance } from '@/features/sessions/hooks';
 import { useSubmissions } from '@/features/submissions/hooks';
@@ -27,21 +22,26 @@ import { useMemo } from 'react';
 import { useAnnouncements } from '@/features/announcements/hooks';
 import { useWeeks } from '@/features/weeks/hooks';
 import { WeekContent } from '@/types';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
   // --- Data Fetching ---
-  const { data: users = [] } = useUsers();
-  const { data: adminSessions = [] } = useAdminSessions({ enabled: isAdmin });
-  const { data: adminTasks = [] } = useAdminTasks({ enabled: isAdmin });
-  const { data: adminSubmissions = [] } = useAdminSubmissions({ enabled: isAdmin });
+  const { data: users = [], isLoading: isLoadingUsers } = useUsers();
+  const { data: adminSessions = [], isLoading: isLoadingSess } = useAdminSessions({ enabled: isAdmin });
+  const { data: adminTasks = [], isLoading: isLoadingTasks } = useAdminTasks({ enabled: isAdmin });
+  const { data: adminSubmissions = [], isLoading: isLoadingSubmissions } = useAdminSubmissions({ enabled: isAdmin });
 
-  const { data: memberAttendance = [] } = useMemberAttendance({ enabled: !isAdmin });
-  const { data: memberTasks = [] } = useMemberTasks({ enabled: !isAdmin });
-  const { data: memberSubmissions = [] } = useSubmissions();
-  const { data: apiWeeks = [] } = useWeeks(user?.role);
+  const { data: memberAttendance = [], isLoading: isLoadingAtt } = useMemberAttendance({ enabled: !isAdmin });
+  const { data: memberTasks = [], isLoading: isLoadingMTasks } = useMemberTasks({ enabled: !isAdmin });
+  const { data: memberSubmissions = [], isLoading: isLoadingMSubs } = useSubmissions();
+  const { data: apiWeeks = [], isLoading: isLoadingWeeks } = useWeeks(user?.role);
+  const { data: announcements = [], isLoading: isLoadingAnnouncements } = useAnnouncements();
+
+  const isLoading = isLoadingUsers || isLoadingWeeks || isLoadingAnnouncements || 
+                    (isAdmin ? (isLoadingSess || isLoadingTasks || isLoadingSubmissions) : (isLoadingAtt || isLoadingMTasks || isLoadingMSubs));
 
   // --- Admin Stats Calculation ---
   const adminStats = useMemo(() => {
@@ -55,7 +55,7 @@ export default function Dashboard() {
 
     adminSessions.forEach(session => {
       if (session.attendance && session.attendance.length > 0) {
-        const presentCount = session.attendance.filter(a => a.status).length;
+        const presentCount = session.attendance.filter(a => typeof a.user === 'object' ? a.status : a.status).length;
         const sessionPercentage = (presentCount / session.attendance.length) * 100;
         totalAttendancePercentage += sessionPercentage;
         sessionsWithAttendance++;
@@ -76,7 +76,6 @@ export default function Dashboard() {
       adminSessions.forEach(s => {
         if (s.attendance) {
           const record = s.attendance.find(a => {
-            // Handle user being object or ID
             const userId = typeof a.user === 'object' ? a.user.id : a.user;
             return userId === member.id;
           });
@@ -89,7 +88,6 @@ export default function Dashboard() {
       const attendancePct = total > 0 ? Math.round((attended / total) * 100) : 0;
 
       // Task Progress
-      // Count submissions for this user
       const submissionCount = adminSubmissions.filter(sub => {
         const subUserId = typeof sub.user === 'object' ? sub.user.id : sub.user;
         return subUserId === member.id;
@@ -118,23 +116,23 @@ export default function Dashboard() {
   const weeks = useMemo<WeekContent[]>(() => {
     if (!apiWeeks) return [];
 
-    return (apiWeeks as (import('@/types').WeekDetail | import('@/types').MemberWeekDetail)[]).map((week) => {
-      // Use type assertion to handle both admin and member week item arrays
+    return apiWeeks.map((week: import('@/types').WeekDetail | import('@/types').MemberWeekDetail) => {
       const adminWeek = week as import('@/types').WeekDetail;
       const memberWeek = week as import('@/types').MemberWeekDetail;
       const items = (adminWeek.week_items || memberWeek.items || []) as (import('@/types').WeekItemAdminDetail | import('@/types').MemberItem)[];
       
       const isCompleted = items.length > 0 && items.every((item) => {
-        const itemWithProgress = item as { week_progress?: any[] };
+        const itemWithProgress = item as { week_progress?: import('@/types').WeekProgress[] };
         const progressArr = itemWithProgress.week_progress || [];
-        return Array.isArray(progressArr) && progressArr.some((p: any) => 
+        return Array.isArray(progressArr) && progressArr.some((p) => 
           p.is_finished && (!user?.id || p.user?.id === user.id || !p.user)
         );
       });
-      
 
-      const weekNumber = (week as any).number || 0;
-      const firstItem = items[0] as any;
+      
+      
+      const weekNumber = (week as { number?: number }).number || 0;
+      const firstItem = items[0] as { notes?: string; title?: string };
       
       return {
         id: week.id?.toString() ?? `week-${weekNumber}`,
@@ -143,10 +141,10 @@ export default function Dashboard() {
         description: firstItem?.notes || firstItem?.title || '', 
         isCompleted,
         items: items as any,
-        notes: items.find((item: any) => item.title?.toLowerCase().includes('note'))?.resource || null,
-        slides: items.find((item: any) => item.title?.toLowerCase().includes('slide'))?.resource || null,
-        challengeLink: items.find((item: any) => item.title?.toLowerCase().includes('challenge'))?.resource || null,
-        formLink: items.find((item: any) => item.title?.toLowerCase().includes('form'))?.resource || null,
+        notes: (items as any[]).find((item: any) => item.title?.toLowerCase().includes('note'))?.resource || null,
+        slides: (items as any[]).find((item: any) => item.title?.toLowerCase().includes('slide'))?.resource || null,
+        challengeLink: (items as any[]).find((item: any) => item.title?.toLowerCase().includes('challenge'))?.resource || null,
+        formLink: (items as any[]).find((item: any) => item.title?.toLowerCase().includes('form'))?.resource || null,
       };
     });
   }, [apiWeeks, user?.id]);
@@ -155,17 +153,14 @@ export default function Dashboard() {
   const memberStats = useMemo(() => {
     if (isAdmin) return null;
 
-    // Attendance
     const attendedCount = memberAttendance.filter(a => a.status).length;
     const totalSessions = memberAttendance.length;
     const attendancePercentage = totalSessions > 0
       ? Math.round((attendedCount / totalSessions) * 100)
       : 0;
 
-    // Tasks & Submissions
     const submittedCount = memberSubmissions.length;
 
-    // Curriculum Progress
     const completedWeeksCount = weeks.filter(w => w.isCompleted).length;
     const totalWeeksCount = weeks.length;
     const curriculumProgress = totalWeeksCount > 0 
@@ -180,14 +175,16 @@ export default function Dashboard() {
       curriculumProgress
     };
   }, [isAdmin, memberAttendance, memberSubmissions, weeks]);
-  const { data: announcements = [] } = useAnnouncements();
 
-  // If all weeks are completed, show the last week as a reference, otherwise show the current active one
   const currentWeek = useMemo(() => {
-    if (weeks.length === 0) return mockWeekContent[0];
+    if (weeks.length === 0) return null;
     const incomplete = weeks.find((w) => !w.isCompleted);
     return incomplete || weeks[weeks.length - 1];
   }, [weeks]);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -211,7 +208,7 @@ export default function Dashboard() {
               title="Total Members"
               value={adminStats?.totalMembers || 0}
               icon={Users}
-              trend={{ value: users.length > 0 ? 100 : 0, isPositive: true }} // Placeholder trend
+              trend={{ value: users.length > 0 ? 100 : 0, isPositive: true }}
             />
             <StatCard
               title="Avg. Attendance"
@@ -281,16 +278,6 @@ export default function Dashboard() {
                       className="h-2 sm:h-3"
                     />
                   </div>
-
-                  {/* Achievements */}
-                  <div className="space-y-3">
-                    <p className="text-xs sm:text-sm font-medium text-foreground">Achievements Earned</p>
-                    <div className="flex flex-wrap gap-2 sm:gap-3">
-                      {mockMemberProgress.achievements.map((achievement) => (
-                        <AchievementBadge key={achievement.id} achievement={achievement} />
-                      ))}
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -340,9 +327,11 @@ export default function Dashboard() {
           )}
 
           {/* Current Week Task */}
-          <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <WeeklyTaskCard currentWeek={currentWeek} />
-          </div>
+          {currentWeek && (
+            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <WeeklyTaskCard currentWeek={currentWeek} />
+            </div>
+          )}
         </div>
 
         {/* Right Column - Announcements */}

@@ -13,7 +13,7 @@ import { ViewItemProgressDialog } from '@/components/dialogs/ViewItemProgressDia
 import { WeekContent, WeekProgress } from '@/types';
 import { useWeeks, useDeleteWeek, useDeleteWeekItem } from '@/features/weeks/hooks';
 import { DeleteConfirmationDialog } from '@/components/dialogs/DeleteConfirmationDialog';
-import { mockWeekContent } from '@/data/mockData';
+import { WeeksSkeleton } from '@/components/weeks/WeeksSkeleton';
 import {
   Accordion,
   AccordionContent,
@@ -57,45 +57,40 @@ export default function Weeks() {
   const deleteWeek = useDeleteWeek();
   const deleteItem = useDeleteWeekItem();
   
-  // Fetch weeks from API (role-based)
   const { data: apiWeeks, isLoading, error } = useWeeks(user?.role);
 
-  // Use mock data if API returns 404 or 500 (endpoint not implemented or crashing)
-  const useMockData = error && typeof error === 'object' && 'response' in error && 
-    [404, 500].includes((error as { response?: { status?: number } }).response?.status ?? 0);
-
-  // Transform API data to UI format, or use mock data as fallback
   const weeks = useMemo<WeekContent[]>(() => {
-    if (useMockData) {
-      return mockWeekContent;
-    }
-
     if (!apiWeeks) return [];
 
-    return apiWeeks.map((week: any) => {
-      // For students, find their specific progress entry in the array
-      // Handle both member API (week.items) and admin API (week.week_items)
-      const items = week.week_items || week.items || [];
-      const isCompleted = items.length > 0 && items.every((item: any) => 
-        Array.isArray(item.week_progress) && item.week_progress.some((p: any) => p.is_finished && (!user?.id || p.user?.id === user.id || !p.user))
-      );
+    return apiWeeks.map((week: import('@/types').WeekDetail | import('@/types').MemberWeekDetail) => {
+      const adminWeek = week as import('@/types').WeekDetail;
+      const memberWeek = week as import('@/types').MemberWeekDetail;
+      const items = (adminWeek.week_items || memberWeek.items || []) as (import('@/types').WeekItemAdminDetail | import('@/types').MemberItem)[];
+      
+      const isCompleted = items.length > 0 && items.every((item) => {
+        const itemWithProgress = item as { week_progress?: any[] };
+        const progressArr = itemWithProgress.week_progress || [];
+        return Array.isArray(progressArr) && progressArr.some((p: any) => 
+          p.is_finished && (!user?.id || p.user?.id === user.id || !p.user)
+        );
+      });
+      
+      const weekNumber = (week as any).number || 0;
       
       return {
-        id: week.id?.toString() ?? `week-${week.number}`,
-        weekNumber: week.number,
+        id: week.id?.toString() ?? `week-${weekNumber}`,
+        weekNumber: weekNumber,
         title: week.title,
-        description: (items.length > 0) ? items[0].notes || '' : '', 
+        description: (items.length > 0) ? (items[0] as { notes?: string }).notes || '' : '', 
         isCompleted,
-        // Store all items for direct display
         items: items,
-        // Fallbacks for legacy components
-        notes: items.find(item => item.title.toLowerCase().includes('note'))?.resource,
-        slides: items.find(item => item.title.toLowerCase().includes('slide'))?.resource,
-        challengeLink: items.find(item => item.title.toLowerCase().includes('challenge'))?.resource,
-        formLink: items.find(item => item.title.toLowerCase().includes('form'))?.resource,
+        notes: items.find((item: any) => item.title.toLowerCase().includes('note'))?.resource,
+        slides: items.find((item: any) => item.title.toLowerCase().includes('slide'))?.resource,
+        challengeLink: items.find((item: any) => item.title.toLowerCase().includes('challenge'))?.resource,
+        formLink: items.find((item: any) => item.title.toLowerCase().includes('form'))?.resource,
       };
     });
-  }, [apiWeeks, useMockData, user?.id]);
+  }, [apiWeeks, user?.id]);
 
   const completedWeeks = weeks.filter((w) => w.isCompleted).length;
   const progressPercentage = weeks.length > 0 ? Math.round((completedWeeks / weeks.length) * 100) : 0;
@@ -133,25 +128,21 @@ export default function Weeks() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Loading weeks...</p>
-        </div>
-      </div>
-    );
+    return <WeeksSkeleton />;
   }
 
-  if (error && !useMockData) {
+  if (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <AlertCircle className="w-8 h-8 mx-auto text-destructive" />
           <div>
-            <p className="font-semibold text-foreground">Failed to load weeks</p>
+            <p className="font-semibold text-foreground">Failed to load roadmap</p>
             <p className="text-sm text-muted-foreground">Please try again later</p>
           </div>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Try Again
+          </Button>
         </div>
       </div>
     );
@@ -159,21 +150,6 @@ export default function Weeks() {
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      {useMockData && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-lg p-4 animate-fade-in">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                Using Demo Data
-              </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                The backend API endpoint is not available yet. Displaying sample data for demonstration purposes.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
         <div className="space-y-1">
@@ -270,7 +246,7 @@ export default function Weeks() {
                           {week.title}
                         </h3>
                       </div>
-                      {isAdmin && !useMockData && (
+                      {isAdmin && (
                         <div className="flex items-center gap-1">
                           <Button 
                             variant="ghost" 
