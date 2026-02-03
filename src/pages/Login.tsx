@@ -133,7 +133,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    disabled={isLoading}
+                    disabled={loading || isLoading}
                   />
                 </div>
 
@@ -148,7 +148,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    disabled={isLoading}
+                    disabled={loading || isLoading}
                   />
                 </div>
 
