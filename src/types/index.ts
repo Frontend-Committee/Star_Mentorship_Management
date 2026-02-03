@@ -83,16 +83,15 @@ export interface Task {
   date: string;
   created_at?: string;
   updated_at?: string;
+  assigned_to?: number[];
 }
 
 export interface TaskCreatePayload {
   title: string;
   description: string;
   date: string;
-  // Admin might assign users, but spec says "assigned_to" in previous turn, 
-  // though new spec only lists title, description, date for Update. 
-  // We'll keep assigned_to as optional if implemented.
-  assigned_to?: number[]; 
+  users?: number[];  // Used by backend for creation
+  assigned_to?: number[]; // Used for display/edit if needed, but backend expects 'users' for creation
 }
 
 export interface TaskUpdatePayload {
@@ -365,6 +364,7 @@ export interface Session {
   location: string;
   type: 'online' | 'offline';
   note?: string;
+  type: 'online' | 'offline';
   attendance: Attendance[];
 }
 
@@ -385,6 +385,7 @@ export interface SessionCreatePayload {
   location: string;
   type: 'online' | 'offline';
   note?: string;
+  type: 'online' | 'offline';
 }
 
 export interface AttendanceUpdatePayload {

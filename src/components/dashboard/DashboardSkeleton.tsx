@@ -11,7 +11,7 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Stats Grid Skeleton */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {[...Array(4)].map((_, i) => (
           <Card key={i} className="border-border/50">
             <CardContent className="p-4 sm:p-6 space-y-3">

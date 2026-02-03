@@ -201,7 +201,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {isAdmin ? (
           <>
             <StatCard
@@ -209,12 +209,6 @@ export default function Dashboard() {
               value={adminStats?.totalMembers || 0}
               icon={Users}
               trend={{ value: users.length > 0 ? 100 : 0, isPositive: true }}
-            />
-            <StatCard
-              title="Avg. Attendance"
-              value={`${adminStats?.avgAttendance || 0}%`}
-              icon={CalendarCheck}
-              trend={{ value: 5, isPositive: true }}
             />
             <StatCard
               title="Content Published"
@@ -233,12 +227,6 @@ export default function Dashboard() {
               title="Weeks Completed"
               value={`${memberStats?.completedWeeks || 0}/${memberStats?.totalWeeksCount || 0}`}
               icon={BookOpen}
-            />
-            <StatCard
-              title="Attendance"
-              value={`${memberStats?.attendancePercentage || 0}%`}
-              icon={CalendarCheck}
-              trend={{ value: 5, isPositive: true }}
             />
             <StatCard
               title="Tasks Submitted"
@@ -311,10 +299,6 @@ export default function Dashboard() {
                             {member.progress}%
                           </span>
                         </div>
-                      </div>
-                      <div className="text-right hidden sm:block">
-                        <p className="text-xs text-muted-foreground">Attendance</p>
-                        <p className="text-sm font-medium text-foreground">{member.attendance}%</p>
                       </div>
                     </div>
                   ))}
