@@ -10,64 +10,63 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useCreateWeek } from '@/features/weeks/hooks';
+import { Calendar } from 'lucide-react';
 
 interface AddWeekDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddWeek: (week: {
-    weekNumber: number;
-    title: string;
-    description: string;
-    notes?: string;
-    slides?: string;
-    challengeLink?: string;
-    formLink?: string;
-  }) => void;
   nextWeekNumber: number;
 }
 
 export function AddWeekDialog({
   open,
   onOpenChange,
-  onAddWeek,
   nextWeekNumber,
 }: AddWeekDialogProps) {
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [notes, setNotes] = useState('');
-  const [slides, setSlides] = useState('');
-  const [challengeLink, setChallengeLink] = useState('');
-  const [formLink, setFormLink] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  
+  const createWeek = useCreateWeek();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim() || !description.trim()) {
-      toast.error('Title and description are required');
+    if (!title.trim()) {
+      toast.error('Title is required');
       return;
     }
 
-    onAddWeek({
-      weekNumber: nextWeekNumber,
-      title: title.trim(),
-      description: description.trim(),
-      notes: notes.trim() || undefined,
-      slides: slides.trim() || undefined,
-      challengeLink: challengeLink.trim() || undefined,
-      formLink: formLink.trim() || undefined,
-    });
+    if (!startDate) {
+      toast.error('Start date is required');
+      return;
+    }
 
-    // Reset form
-    setTitle('');
-    setDescription('');
-    setNotes('');
-    setSlides('');
-    setChallengeLink('');
-    setFormLink('');
-    onOpenChange(false);
-    toast.success(`Week ${nextWeekNumber} added successfully`);
+    if (!endDate) {
+      toast.error('End date is required');
+      return;
+    }
+
+    try {
+      await createWeek.mutateAsync({
+        number: nextWeekNumber,
+        title: title.trim(),
+        start_date: startDate, // Send YYYY-MM-DD string directly
+        end_date: endDate,     // Send YYYY-MM-DD string directly
+      });
+
+      // Reset form
+      setTitle('');
+      setStartDate('');
+      setEndDate('');
+      onOpenChange(false);
+      toast.success(`Week ${nextWeekNumber} created successfully`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create week';
+      toast.error(errorMessage);
+    }
   };
 
   return (
@@ -76,7 +75,7 @@ export function AddWeekDialog({
         <DialogHeader>
           <DialogTitle className="font-heading">Add Week {nextWeekNumber}</DialogTitle>
           <DialogDescription>
-            Add new weekly content for your mentorship program.
+            Create a new week for your mentorship program.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,64 +86,54 @@ export function AddWeekDialog({
               placeholder="e.g., Introduction to Web Development"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              required
             />
           </div>
+          
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
-            <Textarea
-              id="description"
-              placeholder="Brief description of this week's content..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+            <Label htmlFor="startDate" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Start Date *
+            </Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes URL</Label>
-              <Input
-                id="notes"
-                placeholder="https://..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="slides">Slides URL</Label>
-              <Input
-                id="slides"
-                placeholder="https://..."
-                value={slides}
-                onChange={(e) => setSlides(e.target.value)}
-              />
-            </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="endDate" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              End Date *
+            </Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={startDate}
+              required
+            />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="challenge">Challenge URL</Label>
-              <Input
-                id="challenge"
-                placeholder="https://..."
-                value={challengeLink}
-                onChange={(e) => setChallengeLink(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="form">Submission Form URL</Label>
-              <Input
-                id="form"
-                placeholder="https://..."
-                value={formLink}
-                onChange={(e) => setFormLink(e.target.value)}
-              />
-            </div>
-          </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              disabled={createWeek.isPending}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="gradient">
-              Add Week
+            <Button 
+              type="submit" 
+              variant="gradient"
+              disabled={createWeek.isPending}
+            >
+              {createWeek.isPending ? 'Creating...' : 'Add Week'}
             </Button>
           </DialogFooter>
         </form>

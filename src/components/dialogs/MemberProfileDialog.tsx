@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Member } from '@/types';
+import { cn } from '@/lib/utils';
 import { 
   Mail, 
   TrendingUp, 
@@ -28,6 +29,8 @@ interface MemberProfileDialogProps {
   onOpenChange: (open: boolean) => void;
   member: Member | null;
   onSaveNotes: (memberId: string, notes: string) => void;
+  onToggleBestMember?: (memberId: string) => void;
+  isAdmin?: boolean;
 }
 
 export function MemberProfileDialog({
@@ -35,6 +38,8 @@ export function MemberProfileDialog({
   onOpenChange,
   member,
   onSaveNotes,
+  onToggleBestMember,
+  isAdmin,
 }: MemberProfileDialogProps) {
   const [notes, setNotes] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -85,6 +90,20 @@ export function MemberProfileDialog({
                 <span>{member.email}</span>
               </div>
             </div>
+            {isAdmin && onToggleBestMember && (
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "gap-1.5",
+                  member.isBest ? "text-amber-600 border-amber-200 bg-amber-50" : "text-muted-foreground"
+                )}
+                onClick={() => onToggleBestMember(member.id)}
+              >
+                <Star className={cn("w-4 h-4", member.isBest && "fill-amber-500 text-amber-500")} />
+                {member.isBest ? "Best Member" : "Mark as Best"}
+              </Button>
+            )}
           </div>
 
           {/* Stats Grid */}

@@ -5,41 +5,60 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserRole } from '@/types';
-import { Star, Users, Shield, Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('member');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const {
-    login
-  } = useAuth();
+  const { login, isLoading } = useAuth();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [error, setError] = useState('');
+  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
-    try {
-      await login(email, password, role);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Invalid credentials. Please try again.');
-    } finally {
-      setIsLoading(false);
+    
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
     }
+
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      // Handle 401 specifically or generic error
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { status?: number } };
+        if (axiosError.response?.status === 401) {
+          setError('Invalid credentials. Please check your email and password.');
+        } else {
+          const errorWithMessage = err as { message?: string };
+          setError(errorWithMessage.message || 'An error occurred during login. Please try again.');
+        }
+      } else {
+        setError('An error occurred during login. Please try again.');
+      }
+    }
+    setLoading(false);
   };
-  return <div className="min-h-screen flex">
+
+  return (
+    <div className="min-h-screen flex">
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-sidebar via-primary/20 to-sidebar items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.3),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.2),transparent_50%)]" />
         
         <div className="relative z-10 text-center space-y-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-glow">
-            <Star className="w-12 h-12 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-32 h-32 rounded-2xl bg-white/10 backdrop-blur-sm shadow-glow">
+            <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-35 h-35 object-contain" />
           </div>
           
           <div className="space-y-4">
@@ -75,13 +94,11 @@ export default function Login() {
           <ThemeToggle />
         </div>
         
-        <div className="w-full max-w-md space-y-8 animate-fade-in" style={{
-        animationDelay: '0.2s'
-      }}>
+        <div className="w-full max-w-md space-y-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           {/* Mobile Logo */}
           <div className="lg:hidden text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-accent shadow-glow">
-              <Star className="w-8 h-8 text-primary-foreground" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-white/10 backdrop-blur-sm shadow-glow">
+              <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-14 h-14 object-contain" />
             </div>
             <h1 className="text-2xl font-heading font-bold">STAR Mentorship</h1>
           </div>
@@ -95,50 +112,66 @@ export default function Login() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Role Selection */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button type="button" onClick={() => setRole('member')} className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-200 ${role === 'member' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:border-primary/50'}`}>
-                    <Users className="w-6 h-6" />
-                    <span className="text-sm font-medium">Member</span>
-                  </button>
-                  <button type="button" onClick={() => setRole('admin')} className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-200 ${role === 'admin' ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:border-primary/50'}`}>
-                    <Shield className="w-6 h-6" />
-                    <span className="text-sm font-medium">Admin</span>
-                  </button>
+                
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>
+                      {error}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading || isLoading}
+                  />
                 </div>
 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required className="h-11" />
-                  </div>
-                  <div className="space-y-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required className="h-11" />
+                    <Link 
+                      to="/forgot-password" 
+                      className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                    >
+                      Forgot password?
+                    </Link>
                   </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading || isLoading}
+                  />
                 </div>
 
-                {error && <p className="text-sm text-destructive text-center">{error}</p>}
-
-                <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={isLoading}>
-                  {isLoading ? <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Signing in...
-                    </> : 'Sign in'}
+                    </>
+                  ) : (
+                    'Sign in'
+                  )}
                 </Button>
-
-                <div className="text-center space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Don't have an account?
-                  </p>
-                  <Link to="/signup" className="text-sm text-primary hover:underline font-medium">
-                    Create an account
-                  </Link>
-                </div>
               </form>
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }
