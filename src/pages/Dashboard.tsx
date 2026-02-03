@@ -128,6 +128,8 @@ export default function Dashboard() {
           p.is_finished && (!user?.id || p.user?.id === user.id || !p.user)
         );
       });
+
+      
       
       const weekNumber = (week as { number?: number }).number || 0;
       const firstItem = items[0] as { notes?: string; title?: string };
