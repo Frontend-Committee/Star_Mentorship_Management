@@ -1,30 +1,143 @@
-import { useAuth } from '@/context/AuthContext';
-import StatCard from '@/components/dashboard/StatCard';
-import ProgressCard from '@/components/dashboard/ProgressCard';
-import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import AchievementBadge from '@/components/dashboard/AchievementBadge';
+import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
+import StatCard from '@/components/dashboard/StatCard';
 import WeeklyTaskCard from '@/components/dashboard/WeeklyTaskCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/context/AuthContext';
 import {
   mockAnnouncements,
-  mockWeekContent,
   mockMemberProgress,
-  mockMembers,
+  mockWeekContent
 } from '@/data/mockData';
+import { useUsers } from '@/features/auth/hooks';
+import { useAdminSessions, useMemberAttendance } from '@/features/sessions/hooks';
+import { useSubmissions } from '@/features/submissions/hooks';
+import { useAdminSubmissions, useAdminTasks, useMemberTasks } from '@/features/tasks/hooks';
 import {
   BookOpen,
-  Users,
-  Trophy,
   CalendarCheck,
-  TrendingUp,
+  CheckCircle,
+  Clock,
   Star,
+  TrendingUp,
+  Users
 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { useMemo } from 'react';
 import { useAnnouncements } from '@/features/announcements/hooks';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+
+  // --- Data Fetching ---
+  const { data: users = [] } = useUsers();
+  const { data: adminSessions = [] } = useAdminSessions({ enabled: isAdmin });
+  const { data: adminTasks = [] } = useAdminTasks({ enabled: isAdmin });
+  const { data: adminSubmissions = [] } = useAdminSubmissions({ enabled: isAdmin });
+
+  const { data: memberAttendance = [] } = useMemberAttendance({ enabled: !isAdmin });
+  const { data: memberTasks = [] } = useMemberTasks({ enabled: !isAdmin });
+  const { data: memberSubmissions = [] } = useSubmissions(); // Assuming this works for members
+
+  // --- Admin Stats Calculation ---
+  const adminStats = useMemo(() => {
+    if (!isAdmin) return null;
+
+    const totalMembers = users.length;
+
+    // Calculate Average Attendance
+    let totalAttendancePercentage = 0;
+    let sessionsWithAttendance = 0;
+
+    adminSessions.forEach(session => {
+      if (session.attendance && session.attendance.length > 0) {
+        const presentCount = session.attendance.filter(a => a.status).length;
+        const sessionPercentage = (presentCount / session.attendance.length) * 100;
+        totalAttendancePercentage += sessionPercentage;
+        sessionsWithAttendance++;
+      }
+    });
+
+    const avgAttendance = sessionsWithAttendance > 0
+      ? Math.round(totalAttendancePercentage / sessionsWithAttendance)
+      : 0;
+
+    const activeTasks = adminTasks.length;
+
+    // Calculate Member Progress for List
+    const memberProgressList = users.slice(0, 5).map(member => {
+      // Attendance
+      let attended = 0;
+      let total = 0;
+      adminSessions.forEach(s => {
+        if (s.attendance) {
+          const record = s.attendance.find(a => {
+            // Handle user being object or ID
+            const userId = typeof a.user === 'object' ? a.user.id : a.user;
+            return userId === member.id;
+          });
+          if (record) {
+            total++;
+            if (record.status) attended++;
+          }
+        }
+      });
+      const attendancePct = total > 0 ? Math.round((attended / total) * 100) : 0;
+
+      // Task Progress
+      // Count submissions for this user
+      const submissionCount = adminSubmissions.filter(sub => {
+        const subUserId = typeof sub.user === 'object' ? sub.user.id : sub.user;
+        return subUserId === member.id;
+      }).length;
+
+      const taskProgressPct = adminTasks.length > 0
+        ? Math.round((submissionCount / adminTasks.length) * 100)
+        : 0;
+
+      return {
+        ...member,
+        attendance: attendancePct,
+        progress: taskProgressPct
+      };
+    });
+
+    return {
+      totalMembers,
+      avgAttendance,
+      activeTasks,
+      memberProgressList
+    };
+  }, [isAdmin, users, adminSessions, adminTasks, adminSubmissions]);
+
+  // --- Member Stats Calculation ---
+  const memberStats = useMemo(() => {
+    if (isAdmin) return null;
+
+    // Attendance
+    const attendedCount = memberAttendance.filter(a => a.status).length;
+    const totalSessions = memberAttendance.length;
+    const attendancePercentage = totalSessions > 0
+      ? Math.round((attendedCount / totalSessions) * 100)
+      : 0;
+
+    // Tasks & Submissions
+    const totalTasks = memberTasks.length;
+    const submittedCount = memberSubmissions.length; // Assuming 1 submission per task usually
+    // Or check tasks status if task object has it? 
+    // Usually tasks are static, submissions track status.
+    // Let's rely on submissions count for "Projects/Tasks Submitted".
+
+    // Mocking weeks for now as we don't have dynamic weeks
+    const completedWeeks = mockMemberProgress.completedWeeks;
+
+    return {
+      attendancePercentage,
+      submittedCount,
+      completedWeeks
+    };
+  }, [isAdmin, memberAttendance, memberTasks, memberSubmissions]);
   const { data: announcements = [] } = useAnnouncements();
 
   const currentWeek = mockWeekContent.find((w) => !w.isCompleted) || mockWeekContent[0];
@@ -34,7 +147,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="space-y-1 sm:space-y-2 animate-fade-in">
         <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground">
-          Welcome back, {user?.first_name}!
+          Welcome back, {user?.first_name || user?.name?.split(' ')[0]}!
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           {isAdmin
@@ -49,24 +162,24 @@ export default function Dashboard() {
           <>
             <StatCard
               title="Total Members"
-              value={mockMembers.length}
+              value={adminStats?.totalMembers || 0}
               icon={Users}
-              trend={{ value: 12, isPositive: true }}
+              trend={{ value: users.length > 0 ? 100 : 0, isPositive: true }} // Placeholder trend
             />
             <StatCard
               title="Avg. Attendance"
-              value="87%"
+              value={`${adminStats?.avgAttendance || 0}%`}
               icon={CalendarCheck}
               trend={{ value: 5, isPositive: true }}
             />
             <StatCard
               title="Content Published"
-              value={`${mockWeekContent.length} Weeks`}
+              value={`${mockWeekContent.length} Weeks`} // Keeping mock for static content
               icon={BookOpen}
             />
             <StatCard
-              title="Active Projects"
-              value={3}
+              title="Active Tasks"
+              value={adminStats?.activeTasks || 0}
               icon={TrendingUp}
             />
           </>
@@ -74,24 +187,24 @@ export default function Dashboard() {
           <>
             <StatCard
               title="Weeks Completed"
-              value={`${mockMemberProgress.completedWeeks}/${mockMemberProgress.totalWeeks}`}
+              value={`${memberStats?.completedWeeks || 0}/${mockWeekContent.length}`}
               icon={BookOpen}
             />
             <StatCard
               title="Attendance"
-              value={`${mockMemberProgress.attendancePercentage}%`}
+              value={`${memberStats?.attendancePercentage || 0}%`}
               icon={CalendarCheck}
               trend={{ value: 5, isPositive: true }}
             />
             <StatCard
-              title="Projects Submitted"
-              value={mockMemberProgress.projectsSubmitted}
-              icon={TrendingUp}
+              title="Tasks Submitted"
+              value={memberStats?.submittedCount || 0}
+              icon={CheckCircle}
             />
             <StatCard
-              title="Achievements"
-              value={mockMemberProgress.achievements.length}
-              icon={Trophy}
+              title="Pending Tasks"
+              value={(memberTasks.length - (memberStats?.submittedCount || 0)) > 0 ? (memberTasks.length - (memberStats?.submittedCount || 0)) : 0}
+              icon={Clock}
             />
           </>
         )}
@@ -121,7 +234,7 @@ export default function Dashboard() {
                       className="h-2 sm:h-3"
                     />
                   </div>
-                  
+
                   {/* Achievements */}
                   <div className="space-y-3">
                     <p className="text-xs sm:text-sm font-medium text-foreground">Achievements Earned</p>
@@ -145,18 +258,18 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 sm:space-y-4">
-                  {mockMembers.slice(0, 5).map((member, index) => (
+                  {adminStats?.memberProgressList.map((member, index) => (
                     <div
                       key={member.id}
                       className="flex items-center gap-3 sm:gap-4 animate-slide-in"
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-medium text-xs sm:text-sm shrink-0">
-                        {member.name.charAt(0)}
+                        {member.first_name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                          {member.name}
+                          {member.first_name} {member.last_name}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <Progress value={member.progress} className="h-1.5 flex-1" />
@@ -171,6 +284,9 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))}
+                  {(!adminStats?.memberProgressList || adminStats.memberProgressList.length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center">No members found.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

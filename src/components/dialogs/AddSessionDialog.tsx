@@ -9,42 +9,42 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Session } from '@/types';
+import { SessionCreatePayload } from '@/types';
 
 interface AddSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (session: Omit<Session, 'id' | 'attendees'>) => void;
+  onAdd: (session: SessionCreatePayload) => void;
 }
 
 export function AddSessionDialog({ open, onOpenChange, onAdd }: AddSessionDialogProps) {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState<'online' | 'offline'>('offline');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [location, setLocation] = useState('');
+  const [note, setNote] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !date) return;
+    if (!title.trim() || !date || !startTime || !endTime || !location) return;
 
     onAdd({
       title: title.trim(),
       date,
-      description: description.trim(),
-      type,
+      start_time: startTime,
+      end_time: endTime,
+      location: location.trim(),
+      note: note.trim(),
     });
 
+    // Reset form
     setTitle('');
     setDate('');
-    setDescription('');
-    setType('offline');
+    setStartTime('');
+    setEndTime('');
+    setLocation('');
+    setNote('');
     onOpenChange(false);
   };
 
@@ -77,33 +77,53 @@ export function AddSessionDialog({ open, onOpenChange, onAdd }: AddSessionDialog
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="type">Session Type</Label>
-              <Select value={type} onValueChange={(v: 'online' | 'offline') => setType(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="offline">Offline</SelectItem>
-                  <SelectItem value="online">Online</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="location">Location / URL</Label>
+              <Input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Room 101 or Zoom Link"
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="start_time">Start Time</Label>
+              <Input
+                id="start_time"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="end_time">End Time</Label>
+              <Input
+                id="end_time"
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                required
+              />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="note">Note (Optional)</Label>
             <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description of the session..."
+              id="note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Brief note or agenda..."
               rows={3}
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">Add Session</Button>
+            <Button type="submit">Create Session</Button>
           </div>
         </form>
       </DialogContent>
