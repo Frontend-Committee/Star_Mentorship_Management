@@ -132,6 +132,7 @@ export default function Dashboard() {
         );
       });
       
+
       const weekNumber = (week as any).number || 0;
       const firstItem = items[0] as any;
       
