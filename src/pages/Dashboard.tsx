@@ -214,12 +214,6 @@ export default function Dashboard() {
               trend={{ value: users.length > 0 ? 100 : 0, isPositive: true }} // Placeholder trend
             />
             <StatCard
-              title="Avg. Attendance"
-              value={`${adminStats?.avgAttendance || 0}%`}
-              icon={CalendarCheck}
-              trend={{ value: 5, isPositive: true }}
-            />
-            <StatCard
               title="Content Published"
               value={`${weeks.length} Weeks`}
               icon={BookOpen}
@@ -236,12 +230,6 @@ export default function Dashboard() {
               title="Weeks Completed"
               value={`${memberStats?.completedWeeks || 0}/${memberStats?.totalWeeksCount || 0}`}
               icon={BookOpen}
-            />
-            <StatCard
-              title="Attendance"
-              value={`${memberStats?.attendancePercentage || 0}%`}
-              icon={CalendarCheck}
-              trend={{ value: 5, isPositive: true }}
             />
             <StatCard
               title="Tasks Submitted"
@@ -324,10 +312,6 @@ export default function Dashboard() {
                             {member.progress}%
                           </span>
                         </div>
-                      </div>
-                      <div className="text-right hidden sm:block">
-                        <p className="text-xs text-muted-foreground">Attendance</p>
-                        <p className="text-sm font-medium text-foreground">{member.attendance}%</p>
                       </div>
                     </div>
                   ))}
