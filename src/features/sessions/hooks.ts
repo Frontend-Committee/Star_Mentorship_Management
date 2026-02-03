@@ -96,7 +96,7 @@ export const useMemberSessions = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['member-sessions'],
     queryFn: async () => {
-      const response = await api.get<any>('/members/sessions/');
+      const response = await api.get<any>('/member/sessions/');
       if (response.data && Array.isArray(response.data.results)) {
         return response.data.results as Session[];
       }
@@ -113,7 +113,7 @@ export const useMemberAttendance = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['member-attendance'],
     queryFn: async () => {
-      const response = await api.get<any>('/members/attendances/');
+      const response = await api.get<any>('/member/attendances/');
       if (response.data && Array.isArray(response.data.results)) {
         return response.data.results as Attendance[];
       }

@@ -65,6 +65,22 @@ export const useRegister = () => {
   });
 };
 
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Partial<User> | FormData) => {
+      // By passing null/undefined to headers, we let the browser/axios handle boundary for FormData
+      const response = await api.patch<User>('auth/users/me/', data, {
+        headers: data instanceof FormData ? { 'Content-Type': undefined } : {}
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+    },
+  });
+};
+
 export const useMe = (options?: { enabled?: boolean }) => {
   const isEnabled = options?.enabled !== undefined ? options.enabled : !!getAccessToken();
   return useQuery({
@@ -75,6 +91,17 @@ export const useMe = (options?: { enabled?: boolean }) => {
     },
     enabled: isEnabled, 
     retry: false, 
+  });
+};
+
+export const useUser = (id: number) => {
+  return useQuery({
+    queryKey: ['users', id],
+    queryFn: async () => {
+      const response = await api.get<User>(`auth/users/${id}/`);
+      return response.data;
+    },
+    enabled: !!id,
   });
 };
 
@@ -102,8 +129,9 @@ export const useUsers = () => {
             last_name: m.name.split(' ')[1] || '',
             email: m.email,
             role: 'member' as const,
-            committee: 'Technical',
-            created_at: new Date().toISOString()
+            committee: null,
+            created_at: new Date().toISOString(),
+            img: null
           })) as User[];
         }
         
@@ -116,8 +144,9 @@ export const useUsers = () => {
           last_name: m.name.split(' ')[1] || '',
           email: m.email,
           role: 'member' as const,
-          committee: 'Technical',
-          created_at: new Date().toISOString()
+          committee: null,
+          created_at: new Date().toISOString(),
+          img: null
         })) as User[];
       }
     }

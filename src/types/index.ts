@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'member';
+export type UserRole = 'admin' | 'member' | 'viewer';
 
 export interface User {
   id: number;
@@ -6,8 +6,10 @@ export interface User {
   last_name: string;
   email: string;
   role: UserRole;
-  committee: string;
+  committee?: number | null;
   created_at: string;
+  img?: string | null;
+  [property: string]: any;
 }
 
 export interface LoginPayload {
