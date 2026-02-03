@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 import { getAccessToken, setAccessToken, setRefreshToken } from '../../lib/auth';
-import { LoginPayload, LoginResponse, RegisterPayload, User } from '../../types';
+import { LoginPayload, LoginResponse, RegisterPayload, ResetPasswordConfirmPayload, ResetPasswordPayload, SetPasswordPayload, User } from '../../types';
 
 export const useLogin = () => {
   const queryClient = useQueryClient();
@@ -149,5 +149,32 @@ export const useUsers = () => {
         })) as User[];
       }
     }
+  });
+};
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: async (data: ResetPasswordPayload) => {
+      const response = await api.post('auth/users/reset_password/', data);
+      return response.data;
+    },
+  });
+};
+
+export const useResetPasswordConfirm = () => {
+  return useMutation({
+    mutationFn: async (data: ResetPasswordConfirmPayload) => {
+      const response = await api.post('auth/users/reset_password_confirm/', data);
+      return response.data;
+    },
+  });
+};
+
+export const useSetPassword = () => {
+  return useMutation({
+    mutationFn: async (data: SetPasswordPayload) => {
+      const response = await api.post('auth/users/set_password/', data);
+      return response.data;
+    },
   });
 };

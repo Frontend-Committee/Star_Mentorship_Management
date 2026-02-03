@@ -55,6 +55,25 @@ export interface LoginResponse {
   access: string;
 }
 
+export interface ResetPasswordPayload {
+  email: string;
+  [property: string]: any;
+}
+
+export interface ResetPasswordConfirmPayload {
+  uid: string;
+  token: string;
+  new_password: string;
+  [property: string]: any;
+}
+
+export interface SetPasswordPayload {
+  current_password: string;
+  new_password: string;
+  [property: string]: any;
+}
+
+
 // --- Task Types ---
 
 export interface Task {
