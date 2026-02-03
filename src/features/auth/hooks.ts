@@ -105,49 +105,20 @@ export const useUser = (id: number) => {
   });
 };
 
-import { mockMembers } from '../../data/mockData';
-
 export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      try {
-        const response = await api.get<any>('auth/users/');
-        
-        let users: User[] = [];
-        if (response.data && Array.isArray(response.data.results)) {
-          users = response.data.results as User[];
-        } else if (Array.isArray(response.data)) {
-          users = response.data as User[];
-        }
-        
-        // If API returns successfully but with no users, fallback to mock data for demo
-        if (users.length === 0) {
-          return mockMembers.map(m => ({
-            id: parseInt(m.id),
-            first_name: m.name.split(' ')[0],
-            last_name: m.name.split(' ')[1] || '',
-            email: m.email,
-            role: 'member' as const,
-            committee: null,
-            created_at: new Date().toISOString(),
-            img: null
-          })) as User[];
-        }
-        
-        return users;
-      } catch (error) {
-        return mockMembers.map(m => ({
-          id: parseInt(m.id),
-          first_name: m.name.split(' ')[0],
-          last_name: m.name.split(' ')[1] || '',
-          email: m.email,
-          role: 'member' as const,
-          committee: null,
-          created_at: new Date().toISOString(),
-          img: null
-        })) as User[];
+      const response = await api.get<any>('auth/users/');
+      
+      let users: User[] = [];
+      if (response.data && Array.isArray(response.data.results)) {
+        users = response.data.results as User[];
+      } else if (Array.isArray(response.data)) {
+        users = response.data as User[];
       }
+      
+      return users;
     }
   });
 };

@@ -363,6 +363,7 @@ export interface Session {
   start_time: string;
   end_time: string;
   location: string;
+  type: 'online' | 'offline';
   note?: string;
   attendance: Attendance[];
 }
@@ -382,6 +383,7 @@ export interface SessionCreatePayload {
   start_time: string;
   end_time: string;
   location: string;
+  type: 'online' | 'offline';
   note?: string;
 }
 
