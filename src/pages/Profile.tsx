@@ -125,10 +125,10 @@ export default function Profile() {
                 <div className="text-2xl font-bold text-primary">{progress.completedWeeks}</div>
                 <div className="text-xs text-muted-foreground">Weeks Completed</div>
               </div>
-              <div className="text-center">
+              {/* <div className="text-center">
                 <div className="text-2xl font-bold text-primary">{progress.projectsSubmitted}</div>
                 <div className="text-xs text-muted-foreground">Projects Submitted</div>
-              </div>
+              </div> */}
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary">{attendancePercentage}%</div>
                 <div className="text-xs text-muted-foreground">Attendance</div>
@@ -200,13 +200,13 @@ export default function Profile() {
                 </div>
                 <Progress value={attendancePercentage} className="h-2" />
               </div>
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Projects Submitted</span>
                   <span className="font-medium text-foreground">{progress.projectsSubmitted} / {progress.totalWeeks}</span>
                 </div>
                 <Progress value={(progress.projectsSubmitted / progress.totalWeeks) * 100} className="h-2" />
-              </div>
+              </div> */}
             </CardContent>
           </Card>
 
