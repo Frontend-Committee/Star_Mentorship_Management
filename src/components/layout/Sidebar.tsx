@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -63,8 +63,8 @@ function SidebarContent({
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-sidebar-primary to-accent shrink-0">
-          <Star className="w-5 h-5 text-sidebar-primary-foreground" />
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden shrink-0">
+          <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-full h-full object-contain" />
         </div>
         {!isCollapsed && (
           <div className="overflow-hidden">
@@ -72,13 +72,13 @@ function SidebarContent({
               STAR
             </h1>
             <p className="text-xs text-sidebar-foreground/60 truncate">
-              {user?.committee} Committee
+              {user?.committee ? `Committee #${user.committee}` : 'Member'}
             </p>
           </div>
         )}
       </div>
 
-      {/* Navigation */}
+      {/* Navigation ... */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
@@ -115,6 +115,7 @@ function SidebarContent({
           isCollapsed && "justify-center p-0 w-10 h-10 rounded-full border-none bg-transparent"
         )}>
           <Avatar className="w-8 h-8 border-2 border-background shadow-sm shrink-0">
+            {user?.img && <AvatarImage src={user.img} alt={`${user.first_name} ${user.last_name}`} />}
             <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xs font-bold">
               {user?.first_name?.[0]}
               {user?.last_name?.[0]}

@@ -1,26 +1,84 @@
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { mockMemberProgress, mockAttendance, mockAchievements } from '@/data/mockData';
-import { User, Mail, Building2, Shield, Trophy, Calendar, Target } from 'lucide-react';
+import { User, Mail, Building2, Shield, Trophy, Calendar, Target, Camera, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import AchievementBadge from '@/components/dashboard/AchievementBadge';
+import { useUpdateProfile } from '@/features/auth/hooks';
+import { toast } from 'sonner';
+import { useRef } from 'react';
 
 export default function Profile() {
   const { user } = useAuth();
+  const updateProfile = useUpdateProfile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
 
   const progress = mockMemberProgress;
   const attendancePercentage = progress.attendancePercentage;
   const completionPercentage = Math.round((progress.completedWeeks / progress.totalWeeks) * 100);
+  const fullName = `${user.first_name} ${user.last_name}`;
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (e.g., 2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image too large. Please choose an image smaller than 2MB.');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('img', file);
+      
+      await updateProfile.mutateAsync(formData);
+      toast.success('Profile picture updated successfully');
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      
+      // Attempt to extract specific error messages from the backend
+      const errorData = error.response?.data;
+      let errorMessage = 'Failed to update profile picture';
+      
+      if (errorData && typeof errorData === 'object') {
+        const firstError = Object.values(errorData)[0];
+        if (Array.isArray(firstError)) {
+          errorMessage = firstError[0];
+        } else if (typeof firstError === 'string') {
+          errorMessage = firstError;
+        }
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      // Clear the input so the same file can be selected again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleFileChange}
+      />
       {/* Header */}
       <div>
         <h1 className="text-2xl font-heading font-bold text-foreground">My Profile</h1>
@@ -32,12 +90,22 @@ export default function Profile() {
         <Card className="lg:col-span-1 bg-card/50 backdrop-blur-sm border-border/50">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
-              <Avatar className="w-24 h-24 mb-4">
-                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-2xl font-bold">
-                  {user.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <h2 className="text-xl font-semibold text-foreground">{user.name}</h2>
+              <div className="relative group cursor-pointer" onClick={handleImageClick}>
+                <Avatar className="w-24 h-24 mb-4 ring-2 ring-primary/20 ring-offset-2 ring-offset-background transition-transform group-hover:scale-105">
+                  {user.img && <AvatarImage src={user.img} alt={fullName} />}
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-2xl font-bold">
+                    {user.first_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity mb-4">
+                  {updateProfile.isPending ? (
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-6 h-6 text-white" />
+                  )}
+                </div>
+              </div>
+              <h2 className="text-xl font-semibold text-foreground">{fullName}</h2>
               <p className="text-sm text-muted-foreground mb-3">{user.email}</p>
               <div className="flex gap-2">
                 <Badge variant="secondary" className="capitalize">
@@ -46,7 +114,7 @@ export default function Profile() {
                 </Badge>
                 <Badge variant="outline">
                   <Building2 className="w-3 h-3 mr-1" />
-                  {user.committee}
+                  {user.committee || 'N/A'}
                 </Badge>
               </div>
             </div>
@@ -86,16 +154,20 @@ export default function Profile() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" value={user.name} readOnly className="bg-muted/50" />
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input id="firstName" value={user.first_name} readOnly className="bg-muted/50" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input id="lastName" value={user.last_name} readOnly className="bg-muted/50" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" value={user.email} readOnly className="bg-muted/50" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="committee">Committee</Label>
-                  <Input id="committee" value={user.committee} readOnly className="bg-muted/50" />
+                  <Label htmlFor="committee">Committee ID</Label>
+                  <Input id="committee" value={user.committee || 'N/A'} readOnly className="bg-muted/50" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>

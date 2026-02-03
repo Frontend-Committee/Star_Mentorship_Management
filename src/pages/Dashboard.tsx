@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useAnnouncements } from '@/features/announcements/hooks';
+import { useWeeks } from '@/features/weeks/hooks';
+import { WeekContent } from '@/types';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -38,7 +40,8 @@ export default function Dashboard() {
 
   const { data: memberAttendance = [] } = useMemberAttendance({ enabled: !isAdmin });
   const { data: memberTasks = [] } = useMemberTasks({ enabled: !isAdmin });
-  const { data: memberSubmissions = [] } = useSubmissions(); // Assuming this works for members
+  const { data: memberSubmissions = [] } = useSubmissions();
+  const { data: apiWeeks = [] } = useWeeks(user?.role);
 
   // --- Admin Stats Calculation ---
   const adminStats = useMemo(() => {
@@ -111,6 +114,42 @@ export default function Dashboard() {
     };
   }, [isAdmin, users, adminSessions, adminTasks, adminSubmissions]);
 
+  // Transform API weeks to UI format
+  const weeks = useMemo<WeekContent[]>(() => {
+    if (!apiWeeks) return [];
+
+    return (apiWeeks as (import('@/types').WeekDetail | import('@/types').MemberWeekDetail)[]).map((week) => {
+      // Use type assertion to handle both admin and member week item arrays
+      const adminWeek = week as import('@/types').WeekDetail;
+      const memberWeek = week as import('@/types').MemberWeekDetail;
+      const items = (adminWeek.week_items || memberWeek.items || []) as (import('@/types').WeekItemAdminDetail | import('@/types').MemberItem)[];
+      
+      const isCompleted = items.length > 0 && items.every((item) => {
+        const itemWithProgress = item as { week_progress?: any[] };
+        const progressArr = itemWithProgress.week_progress || [];
+        return Array.isArray(progressArr) && progressArr.some((p: any) => 
+          p.is_finished && (!user?.id || p.user?.id === user.id || !p.user)
+        );
+      });
+      
+      const weekNumber = (week as any).number || 0;
+      const firstItem = items[0] as any;
+      
+      return {
+        id: week.id?.toString() ?? `week-${weekNumber}`,
+        weekNumber,
+        title: week.title || '',
+        description: firstItem?.notes || firstItem?.title || '', 
+        isCompleted,
+        items: items as any,
+        notes: items.find((item: any) => item.title?.toLowerCase().includes('note'))?.resource || null,
+        slides: items.find((item: any) => item.title?.toLowerCase().includes('slide'))?.resource || null,
+        challengeLink: items.find((item: any) => item.title?.toLowerCase().includes('challenge'))?.resource || null,
+        formLink: items.find((item: any) => item.title?.toLowerCase().includes('form'))?.resource || null,
+      };
+    });
+  }, [apiWeeks, user?.id]);
+
   // --- Member Stats Calculation ---
   const memberStats = useMemo(() => {
     if (isAdmin) return null;
@@ -123,31 +162,38 @@ export default function Dashboard() {
       : 0;
 
     // Tasks & Submissions
-    const totalTasks = memberTasks.length;
-    const submittedCount = memberSubmissions.length; // Assuming 1 submission per task usually
-    // Or check tasks status if task object has it? 
-    // Usually tasks are static, submissions track status.
-    // Let's rely on submissions count for "Projects/Tasks Submitted".
+    const submittedCount = memberSubmissions.length;
 
-    // Mocking weeks for now as we don't have dynamic weeks
-    const completedWeeks = mockMemberProgress.completedWeeks;
+    // Curriculum Progress
+    const completedWeeksCount = weeks.filter(w => w.isCompleted).length;
+    const totalWeeksCount = weeks.length;
+    const curriculumProgress = totalWeeksCount > 0 
+      ? Math.round((completedWeeksCount / totalWeeksCount) * 100) 
+      : 0;
 
     return {
       attendancePercentage,
       submittedCount,
-      completedWeeks
+      completedWeeks: completedWeeksCount,
+      totalWeeksCount,
+      curriculumProgress
     };
-  }, [isAdmin, memberAttendance, memberTasks, memberSubmissions]);
+  }, [isAdmin, memberAttendance, memberSubmissions, weeks]);
   const { data: announcements = [] } = useAnnouncements();
 
-  const currentWeek = mockWeekContent.find((w) => !w.isCompleted) || mockWeekContent[0];
+  // If all weeks are completed, show the last week as a reference, otherwise show the current active one
+  const currentWeek = useMemo(() => {
+    if (weeks.length === 0) return mockWeekContent[0];
+    const incomplete = weeks.find((w) => !w.isCompleted);
+    return incomplete || weeks[weeks.length - 1];
+  }, [weeks]);
 
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Header */}
       <div className="space-y-1 sm:space-y-2 animate-fade-in">
         <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground">
-          Welcome back, {user?.first_name || user?.name?.split(' ')[0]}!
+          Welcome back, {user?.first_name || 'User'}!
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           {isAdmin
@@ -174,7 +220,7 @@ export default function Dashboard() {
             />
             <StatCard
               title="Content Published"
-              value={`${mockWeekContent.length} Weeks`} // Keeping mock for static content
+              value={`${weeks.length} Weeks`}
               icon={BookOpen}
             />
             <StatCard
@@ -187,7 +233,7 @@ export default function Dashboard() {
           <>
             <StatCard
               title="Weeks Completed"
-              value={`${memberStats?.completedWeeks || 0}/${mockWeekContent.length}`}
+              value={`${memberStats?.completedWeeks || 0}/${memberStats?.totalWeeksCount || 0}`}
               icon={BookOpen}
             />
             <StatCard
@@ -226,11 +272,11 @@ export default function Dashboard() {
                     <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-muted-foreground">Overall Completion</span>
                       <span className="font-medium text-foreground">
-                        {Math.round((mockMemberProgress.completedWeeks / mockMemberProgress.totalWeeks) * 100)}%
+                        {memberStats?.curriculumProgress || 0}%
                       </span>
                     </div>
                     <Progress
-                      value={(mockMemberProgress.completedWeeks / mockMemberProgress.totalWeeks) * 100}
+                      value={memberStats?.curriculumProgress || 0}
                       className="h-2 sm:h-3"
                     />
                   </div>
