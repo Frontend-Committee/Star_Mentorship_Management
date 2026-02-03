@@ -44,9 +44,7 @@ export const useCreateSession = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sessions'] });
     },
-    onError: (error) => {
-      console.error("Unknown error:", error);
-
+    onError: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sessions'] });
     },
   });

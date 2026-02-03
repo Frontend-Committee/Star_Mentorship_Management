@@ -46,7 +46,6 @@ export default function Profile() {
       await updateProfile.mutateAsync(formData);
       toast.success('Profile picture updated successfully');
     } catch (error: any) {
-      console.error('Profile update error:', error);
       
       // Attempt to extract specific error messages from the backend
       const errorData = error.response?.data;

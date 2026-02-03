@@ -33,7 +33,6 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err: unknown) {
-      console.error('Login failed', err);
       // Handle 401 specifically or generic error
       if (err && typeof err === 'object' && 'response' in err) {
         const axiosError = err as { response?: { status?: number } };

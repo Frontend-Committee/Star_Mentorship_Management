@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox'; // Assuming you have this or standard input
 import { toast } from 'sonner';
 import { useCreateWeekItem } from '@/features/weeks/hooks';
-import { useUsers } from '@/features/auth/hooks';
+import { useCommitteeMembers } from '@/features/members/hooks';
 import { Loader2 } from 'lucide-react';
 
 interface AddWeekItemDialogProps {
@@ -36,7 +36,7 @@ export function AddWeekItemDialog({
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   
   const createItem = useCreateWeekItem();
-  const { data: users, isLoading: isLoadingUsers } = useUsers();
+  const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,8 +60,6 @@ export function AddWeekItemDialog({
         users: selectedUsers.map(id => ({ user: id })),
       };
       
-      console.log('Creating week item with payload:', payload);
-      
       await createItem.mutateAsync(payload);
 
       // Reset form
@@ -72,8 +70,6 @@ export function AddWeekItemDialog({
       onOpenChange(false);
       toast.success('Item added successfully');
     } catch (error) {
-      console.error('Failed to create week item:', error);
-      
       // Extract detailed error message from backend
       let errorMessage = 'Failed to add item';
       
@@ -81,8 +77,6 @@ export function AddWeekItemDialog({
         const axiosError = error as { response?: { data?: Record<string, unknown> | string; status?: number } };
         const status = axiosError.response?.status;
         const data = axiosError.response?.data;
-
-        console.error('Backend response:', data);
 
         if (status === 500) {
           // Check for the specific AttributeError bug in the backend response

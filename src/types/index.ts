@@ -1,15 +1,41 @@
-export type UserRole = 'admin' | 'member' | 'viewer';
+export enum Role {
+  Admin = "admin",
+  Member = "member",
+  Viewer = "viewer",
+}
+
+export type UserRole = Role;
 
 export interface User {
   id: number;
   first_name: string;
   last_name: string;
   email: string;
-  role: UserRole;
+  role: Role;
   committee?: number | null;
   created_at: string;
   img?: string | null;
   [property: string]: any;
+}
+
+export interface MemberWithProgress {
+  id?: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: Role;
+  committee?: number | null;
+  created_at?: string;
+  session_attendance?: number;
+  week_progress?: number;
+  [property: string]: any;
+}
+
+export interface PaginatedResponse<T> {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results?: T[];
 }
 
 export interface LoginPayload {
@@ -126,6 +152,18 @@ export interface LegacyUser {
   role: UserRole;
   committee: string;
   avatar?: string;
+}
+
+export interface Member {
+  id: string;
+  name: string;
+  email: string;
+  progress: number;
+  attendance: number;
+  isBest: boolean;
+  assignmentsSubmitted: number;
+  projectsCompleted: number;
+  adminNotes?: string;
 }
 
 export interface Announcement {

@@ -193,7 +193,6 @@ export default function TaskDetailsPage() {
                     const user = typeof sub.user === 'object' && sub.user !== null
                       ? sub.user
                       : { id: sub.user, first_name: 'Member', last_name: `#${sub.user}`, email: '' };
-                      console.log('Submission user:', user);
 
                     return (
                       <TableRow key={sub.id}>

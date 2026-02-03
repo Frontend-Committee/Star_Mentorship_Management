@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useWeekItem, useUpdateWeekItemFull } from '@/features/weeks/hooks';
-import { useUsers } from '@/features/auth/hooks';
+import { useCommitteeMembers } from '@/features/members/hooks';
 import { Loader2 } from 'lucide-react';
 
 interface EditWeekItemDialogProps {
@@ -35,7 +35,7 @@ export function EditWeekItemDialog({
   
   const { data: item, isLoading: isLoadingItem } = useWeekItem(itemId);
   const updateItem = useUpdateWeekItemFull(itemId);
-  const { data: users, isLoading: isLoadingUsers } = useUsers();
+  const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
 
   // Load item data into form
   useEffect(() => {
@@ -75,7 +75,6 @@ export function EditWeekItemDialog({
       toast.success('Item updated successfully');
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to update week item:', error);
       toast.error('Failed to update item');
     }
   };

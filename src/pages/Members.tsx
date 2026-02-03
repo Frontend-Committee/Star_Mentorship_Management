@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/context/AuthContext';
-import { useUsers } from '@/features/auth/hooks';
+import { useMembersWithProgress } from '@/features/members/hooks';
 import { toast } from '@/hooks/use-toast';
 import { Member } from '@/types';
 import { CalendarCheck, Crown, Eye, Loader2, Mail, Search, TrendingUp } from 'lucide-react';
@@ -20,24 +20,21 @@ export default function Members() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Use real data from API
-  const { data: apiUsers, isLoading, error } = useUsers();
-  
+  const { data: response, isLoading, error } = useMembersWithProgress();
   // Transform API users to Member type
   const members: Member[] = useMemo(() => {
-    if (!apiUsers || !Array.isArray(apiUsers)) return [];
+    const apiUsers = response?.results || [];
     return apiUsers.map(u => ({
-      id: u.id.toString(),
-      name: `${u.first_name} ${u.last_name}`,
-      email: u.email,
-      progress: 0, // Placeholder as API doesn't return this yet
-      attendance: 0, // Placeholder
-      isBest: false, // Placeholder
+      id: u.id?.toString() || Math.random().toString(),
+      name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Anonymous Member',
+      email: u.email || 'No email provided',
+      progress: u.week_progress || 0,
+      attendance: u.session_attendance || 0,
+      isBest: false,
       assignmentsSubmitted: 0,
       projectsCompleted: 0,
-      // You might want to map role/committee here too if needed
     }));
-  }, [apiUsers]);
-  console.log(members);
+  }, [response]);
   
   const handleToggleBestMember = (id: string) => {
     // This functionality requires an API endpoint to update "isBest" status
