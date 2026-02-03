@@ -15,15 +15,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Track token existence locally to force re-evaluation of useMe
+  // Determine initial state based on persistent token storage
   const [hasToken, setHasToken] = useState(() => !!getAccessToken());
 
-  const { data: user, isLoading: isUserLoading } = useMe({ enabled: hasToken });
+  // Fetch current user details if a token exists
+  const { data: user, isLoading: isUserLoading, isFetched } = useMe({ enabled: hasToken });
   const loginMutation = useLogin();
   const queryClient = useQueryClient();
 
   const login = async (email: string, password: string) => {
-    // We ignore 'role' as it's determined by the backend based on credentials
     await loginMutation.mutateAsync({ email, password });
     setHasToken(true);
   };
@@ -31,17 +31,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     clearTokens();
     setHasToken(false);
-    queryClient.removeQueries(); // Clear all cache
-    // Optionally redirect or force state update
+    queryClient.removeQueries(); 
     queryClient.setQueryData(['me'], null);
   };
 
-  // If we don't have a token, we aren't loading, we're just unauthenticated.
-  // If we do have a token, we are loading until useMe finishes.
-  const isLoading = hasToken && isUserLoading;
+  // 1. If we have a token but haven't successfully fetched the user yet, we are loading.
+  // 2. If login is in progress, we are loading.
+  const isLoading = (hasToken && !isFetched) || loginMutation.isPending;
+  
+  // Use either the fetched user object OR the existence of a token as a fallback 
+  // to keep the UI 'authenticated' while the user profile loads.
+  const isAuthenticated = !!user || (hasToken && !isUserLoading);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
