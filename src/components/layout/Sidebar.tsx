@@ -27,7 +27,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 const memberNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: BookOpen, label: 'Weeks', path: '/weeks' },
-  { icon: FolderKanban, label: 'Projects', path: '/projects' },
+  // { icon: FolderKanban, label: 'Projects', path: '/projects' },
   { icon: ListTodo, label: 'Tasks', path: '/tasks' },
   { icon: CalendarCheck, label: 'Attendance', path: '/attendance' },
   { icon: Bell, label: 'Announcements', path: '/announcements' },
@@ -39,7 +39,7 @@ const memberNavItems = [
 const adminNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: BookOpen, label: 'Content', path: '/weeks' },
-  { icon: FolderKanban, label: 'Projects', path: '/projects' },
+  // { icon: FolderKanban, label: 'Projects', path: '/projects' },
   { icon: ListTodo, label: 'Tasks', path: '/tasks' },
   { icon: CalendarCheck, label: 'Attendance', path: '/attendance' },
   { icon: Bell, label: 'Announcements', path: '/announcements' },

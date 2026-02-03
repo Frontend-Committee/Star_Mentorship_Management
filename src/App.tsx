@@ -7,10 +7,10 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+// import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Weeks from "./pages/Weeks";
-import Projects from "./pages/Projects";
+// import Projects from "./pages/Projects";
 import Attendance from "./pages/Attendance";
 import Announcements from "./pages/Announcements";
 import Feedback from "./pages/Feedback";
@@ -39,7 +39,7 @@ const App = () => (
               <Route element={<DashboardLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/weeks" element={<Weeks />} />
-                <Route path="/projects" element={<Projects />} />
+                {/* <Route path="/projects" element={<Projects />} /> */}
                 <Route path="/tasks" element={<TasksListPage />} />
                 <Route path="/tasks/:id" element={<TaskDetailsPage />} />
                 <Route path="/attendance" element={<Attendance />} />
