@@ -10,6 +10,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useRegister } from '@/features/auth/hooks';
 import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
@@ -24,6 +31,7 @@ export function AddMemberDialog({ onSuccess }: AddMemberDialogProps) {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [level, setLevel] = useState('1');
   
   const { mutateAsync: register, isPending } = useRegister();
 
@@ -41,6 +49,7 @@ export function AddMemberDialog({ onSuccess }: AddMemberDialogProps) {
         last_name: lastName,
         email,
         password,
+        level,
       });
       
       toast.success('Member created successfully');
@@ -50,10 +59,11 @@ export function AddMemberDialog({ onSuccess }: AddMemberDialogProps) {
       setLastName('');
       setEmail('');
       setPassword('');
+      setLevel('1');
       
       onSuccess?.();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create member');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create member');
     }
   };
 
@@ -114,6 +124,20 @@ export function AddMemberDialog({ onSuccess }: AddMemberDialogProps) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="level">Level</Label>
+            <Select value={level} onValueChange={setLevel}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Level 1</SelectItem>
+                <SelectItem value="2">Level 2</SelectItem>
+                <SelectItem value="3">Level 3</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

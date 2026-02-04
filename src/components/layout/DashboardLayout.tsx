@@ -28,10 +28,10 @@ export default function DashboardLayout() {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-4 bg-background/80 backdrop-blur-md border-b h-16">
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent shrink-0">
-            <Star className="w-4 h-4 text-primary-foreground" />
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden shrink-0">
+            <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-full h-full object-contain" />
           </div>
-          <span className="font-heading font-bold text-foreground">Star Union</span>
+          <span className="font-heading font-bold text-foreground">STAR</span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
           <Menu className="w-5 h-5" />

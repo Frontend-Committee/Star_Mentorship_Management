@@ -32,11 +32,11 @@ export const useCreateAnnouncement = () => {
   });
 };
 
-export const useUpdateAnnouncement = (id: number) => {
+export const useUpdateAnnouncement = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: Partial<AnnouncementCreatePayload>) => {
+    mutationFn: async ({ id, data }: { id: number, data: Partial<AnnouncementCreatePayload> }) => {
       const response = await api.patch<Announcement>(`announcements/${id}/`, data);
       return response.data;
     },

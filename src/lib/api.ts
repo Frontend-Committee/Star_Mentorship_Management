@@ -42,10 +42,12 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = originalRequest?.url ?? "";
 
+    // Exclude auth-specific routes from token retry
+    // But allow DELETE auth/users/{id}/ (delete member) to be retried
     const isAuthRoute =
-      url.includes("/auth/login/") ||
-      url.includes("/auth/token/refresh/") ||
-      url.includes("/auth/users/");
+      url.includes("auth/login/") ||
+      url.includes("auth/token/refresh/") ||
+      (url.includes("auth/users/") && originalRequest.method?.toUpperCase() !== 'DELETE');
 
     if (status === 401 && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true;
