@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useMembersWithProgress, useDeleteMember, useCommitteeMembers } from '@/features/members/hooks';
 import { toast } from '@/hooks/use-toast';
 import { Member, MemberMinimal } from '@/types';
-import { CalendarCheck, Crown, Eye, Loader2, Mail, Search, TrendingUp, Shield, Users as UsersIcon } from 'lucide-react';
+import { CalendarCheck, Crown, Eye, Loader2, Mail, Search, TrendingUp, Shield, Users as UsersIcon, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -53,7 +53,7 @@ export default function Members() {
         attendance: u.session_attendance || 0,
         isBest: false,
         tasksSubmitted: 0,
-        level: u.level || '1',
+        level: (u.level as string) || '1',
       };
     });
   }, [response]);
@@ -71,6 +71,7 @@ export default function Members() {
         attendance: 0,
         isBest: false,
         tasksSubmitted: 0,
+        level: (u.level as string) || '1',
       };
     });
   }, [committeeData]);
@@ -99,7 +100,7 @@ export default function Members() {
     });
   };
 
-  const handleDeleteMember = (memberId: string) => {
+  const handleDeleteMember = (memberId: string, password?: string) => {
     // Prevent self-deletion
     if (user && memberId === user.id.toString()) {
       toast({
@@ -110,8 +111,18 @@ export default function Members() {
       return;
     }
 
-    deleteMemberMutation.mutate(memberId, {
+    if (!password) {
+      toast({
+        title: "Authentication Required",
+        description: "Please enter your password to confirm deletion.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    deleteMemberMutation.mutate({ userId: memberId, current_password: password }, {
       onSuccess: () => {
+        setIsProfileOpen(false);
         toast({
           title: "Success",
           description: "Member deleted successfully.",
@@ -293,77 +304,92 @@ function MemberCard({ member, index, onAction, showProgress = false, isAdmin }: 
   return (
     <Card
       key={member.id}
-      className="group hover:shadow-lg transition-all duration-300 animate-fade-in"
+      className={cn(
+        "group relative overflow-hidden transition-all duration-300 animate-fade-in border-border/50",
+        "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 bg-card/50 backdrop-blur-sm",
+        isAdmin && "cursor-pointer"
+      )}
       style={{ animationDelay: `${index * 0.05}s` }}
+      onClick={isAdmin ? onAction : undefined}
     >
-      <CardContent className="pt-6 space-y-4">
+      <div className="absolute top-0 left-0 w-1 h-full bg-primary/0 group-hover:bg-primary transition-all duration-300" />
+      
+      <CardContent className="pt-6 space-y-5">
         <div className="flex items-start justify-between">
-          <Avatar className="w-12 h-12 border-2 border-background shadow-sm group-hover:scale-105 transition-transform duration-300">
-            <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary font-bold">
-              {member.name.split(' ').map((n) => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex gap-2">
+          <div className="relative">
+            <Avatar className="w-14 h-14 border-2 border-background shadow-md group-hover:scale-105 transition-transform duration-500">
+              <AvatarFallback className="bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 text-primary font-bold text-lg">
+                {member.name.split(' ').map((n) => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
             {member.isBest && (
-              <div className="p-1.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" title="Best Member">
-                <Crown className="w-4 h-4" />
+              <div className="absolute -top-1 -right-1 p-1 rounded-full bg-amber-400 text-white shadow-sm border-2 border-background">
+                <Crown className="w-3 h-3" />
               </div>
             )}
+          </div>
+          
+          <div className="flex flex-col items-end gap-2">
             {member.level && (
               <Badge 
                 variant="secondary" 
                 className={cn(
-                  "px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                  member.level === '3' ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200/50" : 
-                  member.level === '2' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200/50" :
-                  "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400 border-slate-200/50"
+                  "px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border-none",
+                  member.level === '3' ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" : 
+                  member.level === '2' ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" :
+                  "bg-slate-500/10 text-slate-600 dark:text-slate-400"
                 )}
               >
-                <Shield className="w-3 h-3 mr-1" />
                 Level {member.level}
               </Badge>
             )}
             {isAdmin && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                onClick={onAction}
-              >
-                <Eye className="w-4 h-4" />
-              </Button>
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <ChevronRight className="w-4 h-4 text-primary" />
+              </div>
             )}
           </div>
         </div>
 
-        <div>
-          <h3 className="font-semibold text-lg leading-none mb-1 group-hover:text-primary transition-colors">
+        <div className="space-y-1">
+          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors truncate">
             {member.name}
           </h3>
-          <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-            <Mail className="w-3 h-3" />
-            <span className="truncate">{member.email}</span>
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+            <Mail className="w-3 h-3 opacity-60" />
+            <span className="truncate opacity-80">{member.email}</span>
           </p>
         </div>
 
         {showProgress && (
-          <div className="space-y-3 pt-2">
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium">{member.progress}%</span>
+          <div className="space-y-4 pt-1">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <span>Course Progress</span>
+                <span className="text-foreground">{member.progress}%</span>
               </div>
-              <Progress value={member.progress} className="h-1.5" />
+              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-1000 ease-out"
+                  style={{ width: `${member.progress}%` }}
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center gap-1.5 p-2 rounded-lg bg-secondary/50">
-                <CalendarCheck className="w-3.5 h-3.5 text-primary" />
-                <span>{member.attendance}% Att.</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1 p-2 rounded-xl bg-muted/30 border border-border/10">
+                <div className="flex items-center gap-1.5 text-primary">
+                  <CalendarCheck className="w-3 h-3" />
+                  <span className="text-[10px] font-bold uppercase opacity-70">Attendance</span>
+                </div>
+                <span className="text-sm font-bold">{member.attendance}%</span>
               </div>
-              <div className="flex items-center gap-1.5 p-2 rounded-lg bg-secondary/50">
-                <TrendingUp className="w-3.5 h-3.5 text-accent" />
-                <span>{member.tasksSubmitted} Tasks</span>
+              <div className="flex flex-col gap-1 p-2 rounded-xl bg-muted/30 border border-border/10">
+                <div className="flex items-center gap-1.5 text-accent">
+                  <TrendingUp className="w-3 h-3" />
+                  <span className="text-[10px] font-bold uppercase opacity-70">Tasks</span>
+                </div>
+                <span className="text-sm font-bold">{member.tasksSubmitted}</span>
               </div>
             </div>
           </div>

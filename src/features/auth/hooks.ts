@@ -61,6 +61,7 @@ export const useRegister = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['members-with-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['committee-members'] });
     }
   });
 };
