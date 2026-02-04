@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/context/AuthContext';
 import { useSetPassword } from '@/features/auth/hooks';
+import { useCommitteeDetails } from '@/features/committees/hooks';
 import { Settings as SettingsIcon, Bell, Shield, Palette, Lock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { data: committee, isLoading: isLoadingCommittee } = useCommitteeDetails(user?.committee);
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -25,26 +27,36 @@ export default function Settings() {
       {/* Committee Settings */}
       <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.05s' }}>
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <SettingsIcon className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle>Committee Settings</CardTitle>
-              <CardDescription>Configure your committee's basic settings</CardDescription>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <SettingsIcon className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Committee Settings</CardTitle>
+                <CardDescription>Configure your committee's basic settings</CardDescription>
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="committee-name">Committee Name</Label>
-            <Input id="committee-name" defaultValue={user?.committee} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input id="description" placeholder="Brief description of your committee" />
-          </div>
-          <Button variant="default">Save Changes</Button>
+          {isLoadingCommittee ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="committee-name">Committee Name</Label>
+                <Input id="committee-name" defaultValue={committee?.name || ''} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input id="description" placeholder="Brief description of your committee" defaultValue={committee?.description || ''} />
+              </div>
+              <Button variant="default">Save Changes</Button>
+            </>
+          )}
         </CardContent>
       </Card>
 

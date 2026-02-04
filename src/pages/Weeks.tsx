@@ -68,14 +68,14 @@ export default function Weeks() {
       const items = (adminWeek.week_items || memberWeek.items || []) as (import('@/types').WeekItemAdminDetail | import('@/types').MemberItem)[];
       
       const isCompleted = items.length > 0 && items.every((item) => {
-        const itemWithProgress = item as { week_progress?: any[] };
+        const itemWithProgress = item as { week_progress?: WeekProgress[] };
         const progressArr = itemWithProgress.week_progress || [];
-        return Array.isArray(progressArr) && progressArr.some((p: any) => 
+        return Array.isArray(progressArr) && progressArr.some((p: WeekProgress) => 
           p.is_finished && (!user?.id || p.user?.id === user.id || !p.user)
         );
       });
       
-      const weekNumber = (week as any).number || 0;
+      const weekNumber = (week as { number?: number }).number || 0;
       
       return {
         id: week.id?.toString() ?? `week-${weekNumber}`,
@@ -84,10 +84,10 @@ export default function Weeks() {
         description: (items.length > 0) ? (items[0] as { notes?: string }).notes || '' : '', 
         isCompleted,
         items: items,
-        notes: items.find((item: any) => item.title.toLowerCase().includes('note'))?.resource,
-        slides: items.find((item: any) => item.title.toLowerCase().includes('slide'))?.resource,
-        challengeLink: items.find((item: any) => item.title.toLowerCase().includes('challenge'))?.resource,
-        formLink: items.find((item: any) => item.title.toLowerCase().includes('form'))?.resource,
+        notes: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('note'))?.resource,
+        slides: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('slide'))?.resource,
+        challengeLink: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('challenge'))?.resource,
+        formLink: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('form'))?.resource,
       };
     });
   }, [apiWeeks, user?.id]);
@@ -198,262 +198,284 @@ export default function Weeks() {
       )}
 
       <div className="space-y-4">
-        {weeks.map((week, index) => {
-          const isLocked = !isAdmin && !week.isCompleted && index > 0 && !weeks[index - 1].isCompleted;
-          
-          return (
-            <Card
-              key={week.id}
-              className={`border-border/50 animate-fade-in overflow-hidden ${
-                isLocked ? 'opacity-60' : ''
-              } ${week.isCompleted && !isAdmin ? 'border-green-200 dark:border-green-800/30' : ''}`}
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value={week.id} className="border-0">
-                  <AccordionTrigger className="px-4 sm:px-6 py-4 hover:no-underline hover:bg-muted/30">
-                    <div className="flex items-center gap-3 sm:gap-4 text-left flex-1 min-w-0">
-                      <div className={`p-2 rounded-lg shrink-0 ${
-                        week.isCompleted 
-                          ? 'bg-green-100 dark:bg-green-900/30' 
-                          : isLocked 
-                            ? 'bg-muted' 
-                            : 'bg-primary/10'
-                      }`}>
-                        {week.isCompleted ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                        ) : isLocked ? (
-                          <Lock className="w-5 h-5 text-muted-foreground" />
-                        ) : (
-                          <Circle className="w-5 h-5 text-primary" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge
-                            variant={week.isCompleted ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            Week {week.weekNumber}
-                          </Badge>
-                          {week.assignmentSubmitted && !isAdmin && (
-                            <Badge variant="outline" className="text-xs text-green-600 border-green-300">
-                              Submitted
-                            </Badge>
+        {weeks.length > 0 ? (
+          weeks.map((week, index) => {
+            const isLocked = !isAdmin && !week.isCompleted && index > 0 && !weeks[index - 1].isCompleted;
+            
+            return (
+              <Card
+                key={week.id}
+                className={`border-border/50 animate-fade-in overflow-hidden ${
+                  isLocked ? 'opacity-60' : ''
+                } ${week.isCompleted && !isAdmin ? 'border-green-200 dark:border-green-800/30' : ''}`}
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value={week.id} className="border-0">
+                    <AccordionTrigger className="px-4 sm:px-6 py-4 hover:no-underline hover:bg-muted/30">
+                      <div className="flex items-center gap-3 sm:gap-4 text-left flex-1 min-w-0">
+                        <div className={`p-2 rounded-lg shrink-0 ${
+                          week.isCompleted 
+                            ? 'bg-green-100 dark:bg-green-900/30' 
+                            : isLocked 
+                              ? 'bg-muted' 
+                              : 'bg-primary/10'
+                        }`}>
+                          {week.isCompleted ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          ) : isLocked ? (
+                            <Lock className="w-5 h-5 text-muted-foreground" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-primary" />
                           )}
                         </div>
-                        <h3 className="font-semibold text-foreground mt-1 text-sm sm:text-base truncate">
-                          {week.title}
-                        </h3>
-                      </div>
-                      {isAdmin && (
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const id = parseInt(week.id.toString().replace('week-', ''));
-                              if (!isNaN(id)) setEditWeekId(id);
-                            }}
-                            title="Edit week details"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const id = parseInt(week.id.toString().replace('week-', ''));
-                              if (!isNaN(id)) setDeleteWeekId(id);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </AccordionTrigger>
-                  
-                  <AccordionContent className="px-4 sm:px-6 pb-6">
-                    {isLocked ? (
-                      <p className="text-sm text-muted-foreground italic py-4">
-                        Complete the previous week to unlock this content.
-                      </p>
-                    ) : (
-                      <div className="space-y-6 pt-2">
-                        {/* Summary / Notes */}
-                        {week.description && (
-                          <div className="bg-muted/30 rounded-lg p-4 text-sm text-foreground/80 leading-relaxed border border-border/40">
-                             <div className="flex items-center gap-2 mb-2 text-primary">
-                               <MessageSquare className="w-4 h-4" />
-                               <span className="font-semibold text-xs uppercase tracking-wider">Week Overview</span>
-                             </div>
-                             {week.description}
-                          </div>
-                        )}
-
-                        {/* All Resources Grid */}
-                        <div className="space-y-3">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                            <BookOpen className="w-4 h-4" />
-                            Resources & Tasks
-                          </p>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {(week.items || []).map((item) => {
-                              const isSlide = item.title?.toLowerCase().includes('slide');
-                              const isQuiz = item.title?.toLowerCase().includes('quiz') || item.title?.toLowerCase().includes('form');
-                              const isNote = item.title?.toLowerCase().includes('note');
-                              
-                              return (
-                                <div key={item.id} className="group relative bg-card hover:bg-muted/50 border border-border/50 rounded-xl p-3 flex items-center justify-between transition-all duration-200 shadow-sm hover:shadow-md">
-                                  <div className="flex items-center gap-3 overflow-hidden">
-                                     <div className={`p-2 rounded-lg ${isSlide ? 'bg-orange-100 text-orange-600' : isQuiz ? 'bg-purple-100 text-purple-600' : isNote ? 'bg-blue-100 text-blue-600' : 'bg-primary/10 text-primary'}`}>
-                                       {isSlide ? <Presentation className="w-4 h-4" /> : isQuiz ? <ClipboardList className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                                     </div>
-                                     <div className="min-w-0">
-                                       <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{item.title}</p>
-                                       <p className="text-[10px] text-muted-foreground uppercase">{isSlide ? 'Slideshow' : isQuiz ? 'Activity' : isNote ? 'Documentation' : 'Resource'}</p>
-                                     </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-1">
-                                    {(Array.isArray(item.week_progress) && item.week_progress.some(p => p.is_finished && (!user?.id || p.user?.id === user.id))) && !isAdmin && (
-                                      <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[10px] h-6 px-2">
-                                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                                        Finished
-                                      </Badge>
-                                    )}
-
-                                    {isAdmin && (
-                                      <div className="flex items-center gap-2 mr-2">
-                                        {Array.isArray(item.week_progress) && item.week_progress.length > 0 ? (
-                                           <Badge 
-                                             variant="outline" 
-                                             className="text-[10px] h-6 border-primary/20 bg-primary/5 text-primary cursor-pointer hover:bg-primary/10 transition-colors"
-                                             onClick={(e) => {
-                                               e.stopPropagation();
-                                               setViewItemId(item.id!);
-                                             }}
-                                           >
-                                             {item.week_progress.filter((p: WeekProgress) => p.is_finished).length} / {item.week_progress.length} Done
-                                           </Badge>
-                                        ) : (
-                                          <Badge variant="outline" className="text-[10px] h-6 text-muted-foreground italic">
-                                            No tracking
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    )}
-
-                                    {item.resource && (
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary" asChild title="View external resource">
-                                        <a href={item.resource} target="_blank" rel="noopener noreferrer">
-                                          <ExternalLink className="w-4 h-4" />
-                                        </a>
-                                      </Button>
-                                    )}
-                                    
-                                    {isAdmin && (
-                                      <>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="icon" 
-                                          className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (item.id !== undefined) setEditItemId(item.id);
-                                          }}
-                                          title="Edit item details"
-                                        >
-                                          <Pencil className="w-3.5 h-3.5" />
-                                        </Button>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="icon" 
-                                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (item.id !== undefined) setDeleteItemId(item.id);
-                                          }}
-                                          title="Delete item"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </Button>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                            
-                            {(week.items?.length ?? 0) === 0 && (
-                               <div className="col-span-full py-8 text-center border-2 border-dashed border-border/40 rounded-xl">
-                                  <p className="text-sm text-muted-foreground">No resources added for this week yet.</p>
-                               </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge
+                              variant={week.isCompleted ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              Week {week.weekNumber}
+                            </Badge>
+                            {week.assignmentSubmitted && !isAdmin && (
+                              <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                                Submitted
+                              </Badge>
                             )}
                           </div>
+                          <h3 className="font-semibold text-foreground mt-1 text-sm sm:text-base truncate">
+                            {week.title}
+                          </h3>
                         </div>
-
-                        {/* Admin Control Bar */}
                         {isAdmin && (
-                          <div className="pt-4 border-t border-border/50 flex flex-wrap gap-2 justify-end">
+                          <div className="flex items-center gap-1">
                             <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="text-xs font-semibold h-8 border-primary/30 text-primary hover:bg-primary/5"
-                              onClick={() => {
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 const id = parseInt(week.id.toString().replace('week-', ''));
-                                if (!isNaN(id)) {
-                                  setAddItemWeek({ id, title: week.title });
-                                }
+                                if (!isNaN(id)) setEditWeekId(id);
+                              }}
+                              title="Edit week details"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const id = parseInt(week.id.toString().replace('week-', ''));
+                                if (!isNaN(id)) setDeleteWeekId(id);
                               }}
                             >
-                              <Plus className="w-3.5 h-3.5 mr-1.5" />
-                              Add New Content
+                              <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
                         )}
-
-                        {/* Student Progress Actions */}
-                        {!isAdmin && (
-                          <div className="pt-4 border-t border-border/50 flex justify-between items-center">
-                            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.2em]">Track Your Milestone</span>
-                            {week.isCompleted ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleMarkIncomplete(week.id)}
-                                className="text-muted-foreground h-9"
-                              >
-                                <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
-                                Completed
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handleMarkComplete(week.id)}
-                                className="h-9"
-                              >
-                                <CheckCircle2 className="w-4 h-4 mr-2" />
-                                Mark as Completed
-                              </Button>
-                            )}
-                          </div>
-                        )}
                       </div>
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </Card>
-          );
-        })}
+                    </AccordionTrigger>
+                    
+                    <AccordionContent className="px-4 sm:px-6 pb-6">
+                      {isLocked ? (
+                        <p className="text-sm text-muted-foreground italic py-4">
+                          Complete the previous week to unlock this content.
+                        </p>
+                      ) : (
+                        <div className="space-y-6 pt-2">
+                          {/* Summary / Notes */}
+                          {week.description && (
+                            <div className="bg-muted/30 rounded-lg p-4 text-sm text-foreground/80 leading-relaxed border border-border/40">
+                               <div className="flex items-center gap-2 mb-2 text-primary">
+                                 <MessageSquare className="w-4 h-4" />
+                                 <span className="font-semibold text-xs uppercase tracking-wider">Week Overview</span>
+                               </div>
+                               {week.description}
+                            </div>
+                          )}
+
+                          {/* All Resources Grid */}
+                          <div className="space-y-3">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                              <BookOpen className="w-4 h-4" />
+                              Resources & Tasks
+                            </p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {(week.items || []).map((item) => {
+                                const isSlide = item.title?.toLowerCase().includes('slide');
+                                const isQuiz = item.title?.toLowerCase().includes('quiz') || item.title?.toLowerCase().includes('form');
+                                const isNote = item.title?.toLowerCase().includes('note');
+                                
+                                return (
+                                  <div key={item.id} className="group relative bg-card hover:bg-muted/50 border border-border/50 rounded-xl p-3 flex items-center justify-between transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                       <div className={`p-2 rounded-lg ${isSlide ? 'bg-orange-100 text-orange-600' : isQuiz ? 'bg-purple-100 text-purple-600' : isNote ? 'bg-blue-100 text-blue-600' : 'bg-primary/10 text-primary'}`}>
+                                         {isSlide ? <Presentation className="w-4 h-4" /> : isQuiz ? <ClipboardList className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                                       </div>
+                                       <div className="min-w-0">
+                                         <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{item.title}</p>
+                                         <p className="text-[10px] text-muted-foreground uppercase">{isSlide ? 'Slideshow' : isQuiz ? 'Activity' : isNote ? 'Documentation' : 'Resource'}</p>
+                                       </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-1">
+                                      {(Array.isArray(item.week_progress) && item.week_progress.some(p => p.is_finished && (!user?.id || p.user?.id === user.id))) && !isAdmin && (
+                                        <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[10px] h-6 px-2">
+                                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                                          Finished
+                                        </Badge>
+                                      )}
+
+                                      {isAdmin && (
+                                        <div className="flex items-center gap-2 mr-2">
+                                          {Array.isArray(item.week_progress) && item.week_progress.length > 0 ? (
+                                             <Badge 
+                                               variant="outline" 
+                                               className="text-[10px] h-6 border-primary/20 bg-primary/5 text-primary cursor-pointer hover:bg-primary/10 transition-colors"
+                                               onClick={(e) => {
+                                                 e.stopPropagation();
+                                                 setViewItemId(item.id!);
+                                               }}
+                                             >
+                                               {item.week_progress.filter((p: WeekProgress) => p.is_finished).length} / {item.week_progress.length} Done
+                                             </Badge>
+                                          ) : (
+                                            <Badge variant="outline" className="text-[10px] h-6 text-muted-foreground italic">
+                                              No tracking
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {item.resource && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary" asChild title="View external resource">
+                                          <a href={item.resource} target="_blank" rel="noopener noreferrer">
+                                            <ExternalLink className="w-4 h-4" />
+                                          </a>
+                                        </Button>
+                                      )}
+                                      
+                                      {isAdmin && (
+                                        <>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (item.id !== undefined) setEditItemId(item.id);
+                                            }}
+                                            title="Edit item details"
+                                          >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                          </Button>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (item.id !== undefined) setDeleteItemId(item.id);
+                                            }}
+                                            title="Delete item"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </Button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              
+                              {(week.items?.length ?? 0) === 0 && (
+                                 <div className="col-span-full py-8 text-center border-2 border-dashed border-border/40 rounded-xl">
+                                    <p className="text-sm text-muted-foreground">No resources added for this week yet.</p>
+                                 </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Admin Control Bar */}
+                          {isAdmin && (
+                            <div className="pt-4 border-t border-border/50 flex flex-wrap gap-2 justify-end">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-xs font-semibold h-8 border-primary/30 text-primary hover:bg-primary/5"
+                                onClick={() => {
+                                  const id = parseInt(week.id.toString().replace('week-', ''));
+                                  if (!isNaN(id)) {
+                                    setAddItemWeek({ id, title: week.title });
+                                  }
+                                }}
+                              >
+                                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                                Add New Content
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Student Progress Actions */}
+                          {!isAdmin && (
+                            <div className="pt-4 border-t border-border/50 flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.2em]">Track Your Milestone</span>
+                              {week.isCompleted ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMarkIncomplete(week.id)}
+                                  className="text-muted-foreground h-9"
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
+                                  Completed
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleMarkComplete(week.id)}
+                                  className="h-9"
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                                  Mark as Completed
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </Card>
+            );
+          })
+        ) : (
+          <Card className="border-dashed border-2 animate-fade-in">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="p-4 rounded-full bg-muted mb-4">
+                <BookOpen className="w-12 h-12 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">No Weeks Added Yet</h3>
+              <p className="text-muted-foreground max-w-sm mt-3 mb-6">
+                {isAdmin 
+                  ? "Your curriculum is waiting to be built. Start by creating the first week of content." 
+                  : "The learning path is being prepared. Check back soon for the first week of content!"}
+              </p>
+              {isAdmin && (
+                <Button variant="gradient" onClick={() => setIsAddDialogOpen(true)} className="gap-2 shadow-lg">
+                  <Plus className="w-4 h-4" />
+                  Create First Week
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Dialogs */}

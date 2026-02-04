@@ -18,6 +18,25 @@ export interface User {
   [property: string]: unknown;
 }
 
+/**
+ * Committee
+ */
+export interface Committee {
+  description?: string;
+  id?: number;
+  name: string;
+  [property: string]: unknown;
+}
+
+/**
+ * CommitteeInput
+ */
+export interface CommitteeCreatePayload {
+  description?: string;
+  name: string;
+  [property: string]: unknown;
+}
+
 export interface MemberWithProgress {
   id?: number;
   first_name: string;
