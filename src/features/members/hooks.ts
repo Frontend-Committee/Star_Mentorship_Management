@@ -32,7 +32,7 @@ export const useMembersWithProgress = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['members-with-progress'],
     queryFn: async () => {
-      const response = await api.get<PaginatedResponse<MemberWithProgress>>('members/');
+      const response = await api.get<PaginatedResponse<MemberWithProgress>>('members/?page_size=30');
       return response.data;
     },
     enabled: options?.enabled ?? true,
