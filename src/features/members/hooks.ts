@@ -38,7 +38,7 @@ export const useDeleteMember = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (userId: string | number) => {
+    mutationFn: async ({ userId, current_password }: { userId: string | number; current_password: string }) => {
       // Ensure we have a valid numeric ID
       const id = typeof userId === 'string' ? parseInt(userId, 10) : userId;
       
@@ -48,8 +48,11 @@ export const useDeleteMember = () => {
       }
 
       try {
-        console.log(`[useDeleteMember] Attempting to delete member with ID: ${id} at members/${id}/`);
-        const response = await api.delete(`members/${id}/`);
+        console.log(`[useDeleteMember] Attempting to delete member with ID: ${id} at auth/users/${id}/`);
+        // The backend requires the current password for deletion
+        const response = await api.delete(`auth/users/${id}/`, {
+          data: { current_password }
+        });
         console.log('[useDeleteMember] Delete successful:', response.data);
         return response.data;
       } catch (error: unknown) {
@@ -67,7 +70,7 @@ export const useDeleteMember = () => {
             message = data;
           } else if (data && typeof data === 'object' && data !== null) {
             const dataObj = data as Record<string, unknown>;
-            message = (dataObj.detail as string) || (dataObj.error as string) || (dataObj.message as string) || JSON.stringify(data);
+            message = (dataObj.detail as string) || (dataObj.error as string) || (dataObj.message as string) || (dataObj.current_password?.[0] as string) || JSON.stringify(data);
           }
           throw new Error(message);
         }

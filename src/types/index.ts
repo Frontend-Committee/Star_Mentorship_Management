@@ -15,6 +15,7 @@ export interface User {
   committee?: number | null;
   created_at: string;
   img?: string | null;
+  level?: string;
   [property: string]: unknown;
 }
 
@@ -227,6 +228,7 @@ export interface MemberMinimal {
   first_name?: string;
   id?: number;
   last_name?: string;
+  level?: string;
   [property: string]: unknown;
 }
 
