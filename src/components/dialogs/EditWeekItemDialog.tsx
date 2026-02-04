@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { useWeekItem, useUpdateWeekItemFull } from '@/features/weeks/hooks';
+import { useWeekItem, useUpdateWeekItem } from '@/features/weeks/hooks';
 import { useCommitteeMembers } from '@/features/members/hooks';
 import { Loader2 } from 'lucide-react';
 
@@ -21,12 +21,14 @@ interface EditWeekItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   itemId: number;
+  weekId: number;
 }
 
 export function EditWeekItemDialog({
   open,
   onOpenChange,
   itemId,
+  weekId,
 }: EditWeekItemDialogProps) {
   const [title, setTitle] = useState('');
   const [resource, setResource] = useState('');
@@ -34,7 +36,7 @@ export function EditWeekItemDialog({
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   
   const { data: item, isLoading: isLoadingItem } = useWeekItem(itemId);
-  const updateItem = useUpdateWeekItemFull(itemId);
+  const updateItem = useUpdateWeekItem(itemId);
   const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
 
   // Load item data into form
@@ -57,14 +59,22 @@ export function EditWeekItemDialog({
       return;
     }
 
-    if (!item?.week) {
+    // Determine the week ID - use prop as fallback for item.week
+    const parentWeekId = item?.week || weekId;
+
+    if (!parentWeekId) {
       toast.error('Parent week ID not found');
       return;
     }
 
+    if (selectedUsers.length === 0) {
+      toast.error('Please assign at least one member');
+      return;
+    }
+
     try {
-      const payload: import('@/types').WeekItemCreatePayload = {
-        week: item.week,
+      const payload: Partial<import('@/types').WeekItemCreatePayload> = {
+        week: parentWeekId,
         title: title.trim(),
         resource: resource.trim() || null,
         notes: notes.trim() || null,
@@ -75,7 +85,42 @@ export function EditWeekItemDialog({
       toast.success('Item updated successfully');
       onOpenChange(false);
     } catch (error) {
-      toast.error('Failed to update item');
+      // Extract detailed error message from backend
+      let errorMessage = 'Failed to update item';
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: Record<string, unknown> | string; status?: number } };
+        const status = axiosError.response?.status;
+        const data = axiosError.response?.data;
+
+        if (status === 500) {
+          // Check for the specific AttributeError bug in the backend response
+          if (typeof data === 'string' && data.includes('AttributeError') && data.includes('users')) {
+            errorMessage = 'Item updated, but the server had an error displaying it. Please refresh.';
+            toast.success(errorMessage);
+            onOpenChange(false);
+            return;
+          }
+        }
+        
+        if (data) {
+          if (typeof data === 'string') {
+            errorMessage = data;
+          } else if (typeof data === 'object' && data !== null) {
+            const errorObj = data as Record<string, unknown>;
+            if (typeof errorObj.detail === 'string') errorMessage = errorObj.detail;
+            else if (typeof errorObj.error === 'string') errorMessage = errorObj.error;
+            else {
+              const firstKey = Object.keys(errorObj)[0];
+              if (firstKey && Array.isArray(errorObj[firstKey])) {
+                errorMessage = `${firstKey}: ${String((errorObj[firstKey] as unknown[])[0])}`;
+              }
+            }
+          }
+        }
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -85,6 +130,12 @@ export function EditWeekItemDialog({
         ? prev.filter(id => id !== userId)
         : [...prev, userId]
     );
+  };
+
+  const selectAll = () => {
+    if (users) {
+      setSelectedUsers(users.map(u => u.id));
+    }
   };
 
   return (
@@ -133,7 +184,12 @@ export function EditWeekItemDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Assigned Members ({selectedUsers.length})</Label>
+              <div className="flex items-center justify-between">
+                <Label>Assigned Members ({selectedUsers.length})</Label>
+                <Button type="button" variant="ghost" size="sm" onClick={selectAll} className="h-auto p-0 text-xs">
+                  Select All
+                </Button>
+              </div>
               <div className="border border-border/50 rounded-lg bg-secondary/10 overflow-hidden flex flex-col h-48">
                 {isLoadingUsers ? (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
