@@ -49,6 +49,7 @@ export default function Weeks() {
   const [addItemWeek, setAddItemWeek] = useState<{id: number, title: string} | null>(null);
   const [editWeekId, setEditWeekId] = useState<number | null>(null);
   const [editItemId, setEditItemId] = useState<number | null>(null);
+  const [editItemWeekId, setEditItemWeekId] = useState<number | null>(null);
   const [viewItemId, setViewItemId] = useState<number | null>(null);
   const [deleteWeekId, setDeleteWeekId] = useState<number | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
@@ -367,7 +368,11 @@ export default function Weeks() {
                                             className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              if (item.id !== undefined) setEditItemId(item.id);
+                                              if (item.id !== undefined) {
+                                                setEditItemId(item.id);
+                                                const wId = parseInt(week.id.toString().replace('week-', ''));
+                                                if (!isNaN(wId)) setEditItemWeekId(wId);
+                                              }
                                             }}
                                             title="Edit item details"
                                           >
@@ -505,8 +510,14 @@ export default function Weeks() {
       {editItemId !== null && (
         <EditWeekItemDialog
           open={editItemId !== null}
-          onOpenChange={(open) => !open && setEditItemId(null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditItemId(null);
+              setEditItemWeekId(null);
+            }
+          }}
           itemId={editItemId}
+          weekId={editItemWeekId || 0}
         />
       )}
 
