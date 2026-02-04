@@ -1,3 +1,4 @@
+import { DeleteConfirmationDialog } from '@/components/dialogs/DeleteConfirmationDialog';
 import { SessionDetailsDialog } from '@/components/dialogs/SessionDetailsDialog';
 import { SessionDialog } from '@/components/dialogs/SessionDialog';
 import { Badge } from '@/components/ui/badge';
@@ -42,12 +43,14 @@ export default function Attendance() {
   const isLoading = isAdmin ? isAdminLoading : isMemberLoading;
 
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
 
   const { mutate: createSession, isPending: isCreating } = useCreateSession();
   const { mutate: updateSession, isPending: isUpdating } = useUpdateSession();
-  const { mutate: deleteSession } = useDeleteSession();
+  const { mutate: deleteSession, isPending: isDeleting } = useDeleteSession();
 
   const handleCreateSession = () => {
     setEditingSession(null);
@@ -62,9 +65,10 @@ export default function Attendance() {
           setIsSessionDialogOpen(false);
           setEditingSession(null);
         },
-        onError: (error: any) => {
-          const errorMessage = error.response?.data
-            ? Object.entries(error.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
+        onError: (error: unknown) => {
+          const axiosError = error as { response?: { data?: Record<string, string[]> } };
+          const errorMessage = axiosError.response?.data
+            ? Object.entries(axiosError.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
             : "Failed to update session";
           toast({ title: "Error", description: errorMessage, variant: "destructive" });
         }
@@ -75,9 +79,10 @@ export default function Attendance() {
           toast({ title: "Success", description: "Session created successfully" });
           setIsSessionDialogOpen(false);
         },
-        onError: (error: any) => {
-          const errorMessage = error.response?.data
-            ? Object.entries(error.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
+        onError: (error: unknown) => {
+          const axiosError = error as { response?: { data?: Record<string, string[]> } };
+          const errorMessage = axiosError.response?.data
+            ? Object.entries(axiosError.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
             : "Failed to create session";
           toast({ title: "Error", description: errorMessage, variant: "destructive" });
         }
@@ -92,17 +97,24 @@ export default function Attendance() {
   };
 
   const handleDeleteSession = (session: Session) => {
-    if (window.confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
-      deleteSession(session.id, {
-        onSuccess: () => {
-          toast({ title: "Success", description: "Session deleted successfully" });
-          setSelectedSession(null);
-        },
-        onError: () => {
-          toast({ title: "Error", description: "Failed to delete session", variant: "destructive" });
-        }
-      });
-    }
+    setSessionToDelete(session);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteSession = () => {
+    if (!sessionToDelete) return;
+
+    deleteSession(sessionToDelete.id, {
+      onSuccess: () => {
+        toast({ title: "Success", description: "Session deleted successfully" });
+        setIsDeleteDialogOpen(false);
+        setSessionToDelete(null);
+        setSelectedSession(null);
+      },
+      onError: () => {
+        toast({ title: "Error", description: "Failed to delete session", variant: "destructive" });
+      }
+    });
   };
 
   return (
@@ -256,6 +268,14 @@ export default function Attendance() {
             session={selectedSession}
             onEdit={handleEditSession}
             onDelete={handleDeleteSession}
+          />
+          <DeleteConfirmationDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            onConfirm={confirmDeleteSession}
+            isLoading={isDeleting}
+            title="Delete Session"
+            description={`Are you sure you want to delete "${sessionToDelete?.title}"? This action cannot be undone and will remove all attendance records for this session.`}
           />
         </>
       )}

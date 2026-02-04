@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 import { getAccessToken, setAccessToken, setRefreshToken } from '../../lib/auth';
-import { LoginPayload, LoginResponse, RegisterPayload, ResetPasswordConfirmPayload, ResetPasswordPayload, SetPasswordPayload, User } from '../../types';
+import { LoginPayload, LoginResponse, PaginatedResponse, RegisterPayload, ResetPasswordConfirmPayload, ResetPasswordPayload, SetPasswordPayload, User } from '../../types';
 
 export const useLogin = () => {
   const queryClient = useQueryClient();
@@ -33,34 +33,34 @@ export const useRegister = () => {
         }
 
         return response.data;
-      } catch (error: any) {
-        if (error.response && error.response.data) {
-          
-          const data = error.response.data;
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { data?: Record<string, string[]> } };
+          if (axiosError.response && axiosError.response.data) {
+            const data = axiosError.response.data;
 
-          
-          if (data.password && Array.isArray(data.password)) {
-            throw new Error(`Password: ${data.password[0]}`);
+            if (data.password && Array.isArray(data.password)) {
+              throw new Error(`Password: ${data.password[0]}`);
+            }
+
+            if (data.email && Array.isArray(data.email)) {
+              throw new Error(`Email: ${data.email[0]}`);
+            }
+
+            const firstErrorKey = Object.keys(data)[0];
+            if (firstErrorKey && Array.isArray(data[firstErrorKey])) {
+              throw new Error(`${firstErrorKey}: ${data[firstErrorKey][0]}`);
+            }
+
+            throw new Error(JSON.stringify(data));
           }
-
-          
-          if (data.email && Array.isArray(data.email)) {
-            throw new Error(`Email: ${data.email[0]}`);
-          }
-
-          
-          const firstErrorKey = Object.keys(data)[0];
-          if (firstErrorKey && Array.isArray(data[firstErrorKey])) {
-            throw new Error(`${firstErrorKey}: ${data[firstErrorKey][0]}`);
-          }
-
-          throw new Error(JSON.stringify(data));
         }
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['members-with-progress'] });
     }
   });
 };
@@ -109,13 +109,16 @@ export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const response = await api.get<any>('auth/users/');
+      const response = await api.get<PaginatedResponse<User> | User[]>('auth/users/');
+      const data = response.data;
+      
+      const usersResponse = data as PaginatedResponse<User>;
       
       let users: User[] = [];
-      if (response.data && Array.isArray(response.data.results)) {
-        users = response.data.results as User[];
-      } else if (Array.isArray(response.data)) {
-        users = response.data as User[];
+      if (usersResponse && Array.isArray(usersResponse.results)) {
+        users = usersResponse.results;
+      } else if (Array.isArray(data)) {
+        users = data;
       }
       
       return users;

@@ -15,7 +15,7 @@ export interface User {
   committee?: number | null;
   created_at: string;
   img?: string | null;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 export interface MemberWithProgress {
@@ -28,7 +28,8 @@ export interface MemberWithProgress {
   created_at?: string;
   session_attendance?: number;
   week_progress?: number;
-  [property: string]: any;
+  level?: string;
+  [property: string]: unknown;
 }
 
 export interface PaginatedResponse<T> {
@@ -48,6 +49,7 @@ export interface RegisterPayload {
   last_name: string;
   email: string;
   password: string;
+  level?: string;
 }
 
 export interface LoginResponse {
@@ -57,20 +59,20 @@ export interface LoginResponse {
 
 export interface ResetPasswordPayload {
   email: string;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 export interface ResetPasswordConfirmPayload {
   uid: string;
   token: string;
   new_password: string;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 export interface SetPasswordPayload {
   current_password: string;
   new_password: string;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 
@@ -181,6 +183,7 @@ export interface Member {
   isBest: boolean;
   tasksSubmitted: number;
   adminNotes?: string;
+  level?: string;
 }
 
 export interface Announcement {
@@ -205,7 +208,7 @@ export interface MemberMinimal {
   first_name?: string;
   id?: number;
   last_name?: string;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 // Week Progress tracking for individual items
@@ -214,7 +217,7 @@ export interface WeekProgress {
   is_finished?: boolean;
   notes?: null | string;
   user?: MemberMinimal;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 // Week Item (resource within a week - Member View)
@@ -225,7 +228,7 @@ export interface WeekItem {
   resource?: null | string; // Resource URL
   title: string;
   week_progress?: WeekProgress[];
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 // Week Item Admin Detail (GET admin/items/{id}/)
@@ -248,13 +251,13 @@ export interface MemberProgress {
   id?: number;
   is_finished?: boolean;
   notes?: null | string;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 export interface MemberProgressUpdate {
   is_finished?: boolean;
   notes?: null | string;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 export interface MemberItem {
@@ -263,7 +266,7 @@ export interface MemberItem {
   resource?: string;
   title?: string;
   week_progress?: MemberProgress[];
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 export interface MemberWeekDetail {
@@ -273,7 +276,7 @@ export interface MemberWeekDetail {
   number?: number;
   start_date?: Date;
   title?: string;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 // Week Detail (GET admin/weeks/ and GET weeks/{id}/)
@@ -285,7 +288,7 @@ export interface WeekDetail {
   number: number; // Unique week number
   start_date: Date;
   title: string;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 export interface PaginatedWeekList {
@@ -293,7 +296,7 @@ export interface PaginatedWeekList {
   next?: null | string;
   previous?: null | string;
   results?: WeekDetail[];
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 // Week Create/Update Payload
@@ -302,7 +305,7 @@ export interface WeekCreatePayload {
   number?: number;
   start_date?: string | Date;
   title?: string;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 // Progress Create Payload (POST admin/progress/)
@@ -311,7 +314,7 @@ export interface ProgressCreatePayload {
   notes?: string;
   user: number;
   week_item: number;
-  [property: string]: any;
+  [property: string]: unknown;
 }
 
 // Week Item Create Payload (POST admin/items/)
@@ -363,7 +366,6 @@ export interface Session {
   location: string;
   type: 'online' | 'offline';
   note?: string;
-  type: 'online' | 'offline';
   attendance: Attendance[];
 }
 
@@ -384,7 +386,6 @@ export interface SessionCreatePayload {
   location: string;
   type: 'online' | 'offline';
   note?: string;
-  type: 'online' | 'offline';
 }
 
 export interface AttendanceUpdatePayload {

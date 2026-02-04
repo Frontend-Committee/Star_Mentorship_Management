@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ConfirmDialog } from './ConfirmDialog';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,9 @@ import {
   FileText, 
   Star,
   StickyNote,
-  Save
+  Save,
+  Trash2,
+  Shield
 } from 'lucide-react';
 
 interface MemberProfileDialogProps {
@@ -29,6 +32,7 @@ interface MemberProfileDialogProps {
   member: Member | null;
   onSaveNotes: (memberId: string, notes: string) => void;
   onToggleBestMember?: (memberId: string) => void;
+  onDeleteMember?: (memberId: string) => void;
   isAdmin?: boolean;
 }
 
@@ -38,10 +42,12 @@ export function MemberProfileDialog({
   member,
   onSaveNotes,
   onToggleBestMember,
+  onDeleteMember,
   isAdmin,
 }: MemberProfileDialogProps) {
   const [notes, setNotes] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (member) {
@@ -84,9 +90,17 @@ export function MemberProfileDialog({
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-                <Mail className="w-4 h-4" />
-                <span>{member.email}</span>
+              <div className="flex flex-col gap-1.5 text-sm text-muted-foreground mt-1">
+                <div className="flex items-center gap-1.5">
+                  <Mail className="w-4 h-4" />
+                  <span>{member.email}</span>
+                </div>
+                {member.level && (
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="w-4 h-4 text-primary" />
+                    <span>Level {member.level}</span>
+                  </div>
+                )}
               </div>
             </div>
             {isAdmin && onToggleBestMember && (

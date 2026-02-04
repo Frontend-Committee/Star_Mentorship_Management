@@ -1,26 +1,20 @@
 import api from '@/lib/api';
 import { MemberMinimal, MemberWithProgress, PaginatedResponse } from '@/types';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const useCommitteeMembers = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['committee-members'],
     queryFn: async () => {
-      const response = await api.get<any>('members/assign/');
+      const response = await api.get<PaginatedResponse<MemberMinimal> | MemberMinimal[]>('members/assign/');
       
       // Handle potential pagination or direct array
       const data = response.data;
-      if (data && Array.isArray(data.results)) {
-        return data.results as MemberMinimal[];
-      }
-      if (data && Array.isArray(data.data)) {
-        return data.data as MemberMinimal[];
-      }
-      if (data && Array.isArray(data.members)) {
-        return data.members as MemberMinimal[];
+      if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+        return data.results;
       }
       if (Array.isArray(data)) {
-        return data as MemberMinimal[];
+        return data;
       }
       return [];
     },
@@ -28,13 +22,62 @@ export const useCommitteeMembers = (options?: { enabled?: boolean }) => {
   });
 };
 
-export const useMembersWithProgress = (options?: { enabled?: boolean }) => {
+export const useMembersWithProgress = (options?: { enabled?: boolean; search?: string }) => {
   return useQuery({
-    queryKey: ['members-with-progress'],
+    queryKey: ['members-with-progress', options?.search],
     queryFn: async () => {
-      const response = await api.get<PaginatedResponse<MemberWithProgress>>('members/?page_size=30');
+      const searchParam = options?.search ? `&search=${encodeURIComponent(options.search)}` : '';
+      const response = await api.get<PaginatedResponse<MemberWithProgress>>(`members/?page_size=30${searchParam}`);
       return response.data;
     },
     enabled: options?.enabled ?? true,
+  });
+};
+
+export const useDeleteMember = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (userId: string | number) => {
+      // Ensure we have a valid numeric ID
+      const id = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      
+      if (isNaN(id)) {
+        console.error('Invalid User ID for deletion:', userId);
+        throw new Error('Invalid User ID');
+      }
+
+      try {
+        console.log(`[useDeleteMember] Attempting to delete member with ID: ${id} at members/${id}/`);
+        const response = await api.delete(`members/${id}/`);
+        console.log('[useDeleteMember] Delete successful:', response.data);
+        return response.data;
+      } catch (error: unknown) {
+        console.error('[useDeleteMember] Delete failed:', error);
+        
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { data?: unknown; status?: number } };
+          const data = axiosError.response?.data;
+          const status = axiosError.response?.status;
+          
+          console.error(`[useDeleteMember] API Error ${status}:`, data);
+          
+          let message = `Failed to delete member (Status: ${status})`;
+          if (typeof data === 'string') {
+            message = data;
+          } else if (data && typeof data === 'object' && data !== null) {
+            const dataObj = data as Record<string, unknown>;
+            message = (dataObj.detail as string) || (dataObj.error as string) || (dataObj.message as string) || JSON.stringify(data);
+          }
+          throw new Error(message);
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch members list
+      queryClient.invalidateQueries({ queryKey: ['members-with-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['committee-members'] });
+    },
   });
 };

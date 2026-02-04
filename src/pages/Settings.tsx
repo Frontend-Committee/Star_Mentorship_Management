@@ -190,8 +190,23 @@ function ChangePasswordSection() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: unknown) {
-      const err = error as { message?: string };
-      toast.error(err.message || "Failed to change password");
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { data: Record<string, string[]> } };
+        const data = axiosError.response.data;
+        
+        // Handle field-specific errors
+        if (data.current_password) {
+          toast.error(`Current Password: ${data.current_password[0]}`);
+        } else if (data.new_password) {
+          toast.error(`New Password: ${data.new_password[0]}`);
+        } else if (data.non_field_errors) {
+          toast.error(data.non_field_errors[0]);
+        } else {
+          toast.error("Failed to change password. Please check your credentials.");
+        }
+      } else {
+        toast.error(error instanceof Error ? error.message : "Failed to change password");
+      }
     }
   };
 
