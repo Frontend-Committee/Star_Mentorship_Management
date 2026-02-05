@@ -1,22 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const [error, setError] = useState('');
   
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +64,8 @@ export default function Login() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.2),transparent_50%)]" />
         
         <div className="relative z-10 text-center space-y-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-32 h-32 rounded-2xl bg-white/10 backdrop-blur-sm shadow-glow">
-            <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-35 h-35 object-contain" />
+          <div className="inline-flex items-center justify-center w-32 h-32 rounded-2xl bg-white/10 dark:bg-white/90 backdrop-blur-sm shadow-glow">
+            <img src="/MentorshipWebsiteIcon.svg" alt="STAR Logo" className="w-35 h-35 object-contain" />
           </div>
           
           <div className="space-y-4">
@@ -97,8 +104,8 @@ export default function Login() {
         <div className="w-full max-w-md space-y-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           {/* Mobile Logo */}
           <div className="lg:hidden text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-white/10 backdrop-blur-sm shadow-glow">
-              <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-14 h-14 object-contain" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-white/10 dark:bg-white/90 backdrop-blur-sm shadow-glow">
+              <img src="/MentorshipWebsiteIcon.svg" alt="STAR Logo" className="w-14 h-14 object-contain" />
             </div>
             <h1 className="text-2xl font-heading font-bold">STAR Mentorship</h1>
           </div>
@@ -146,15 +153,31 @@ export default function Login() {
                       Forgot password?
                     </Link>
                   </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading || isLoading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading || isLoading}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full" size="lg" disabled={loading}>

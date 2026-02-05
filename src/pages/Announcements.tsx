@@ -18,14 +18,14 @@ export default function Announcements() {
   const isAdmin = user?.role === 'admin';
   const { data: announcements = [], isLoading } = useAnnouncements();
   const createMutation = useCreateAnnouncement();
-  const updateMutation = useUpdateAnnouncement(0); // We'll use the one below for dynamic ids or just useMutation in place
-  const deleteMutation = useDeleteAnnouncement();
-
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const updateMutation = useUpdateAnnouncement();
+  const deleteMutation = useDeleteAnnouncement();
 
   const handleAddAnnouncement = async (newAnnouncement: AnnouncementCreatePayload) => {
     try {
@@ -43,16 +43,16 @@ export default function Announcements() {
 
   const handleSaveAnnouncement = async (updatedAnnouncement: Announcement) => {
     try {
-      // In a real app we'd use a specific update hook or mutateAsync with the ID
-      await api.patch(`announcements/${updatedAnnouncement.id}/`, {
-        title: updatedAnnouncement.title,
-        description: updatedAnnouncement.description,
-        is_pinned: updatedAnnouncement.is_pinned,
+      await updateMutation.mutateAsync({
+        id: updatedAnnouncement.id,
+        data: {
+          title: updatedAnnouncement.title,
+          description: updatedAnnouncement.description,
+          is_pinned: updatedAnnouncement.is_pinned,
+        }
       });
       setIsEditDialogOpen(false);
       toast.success('Announcement updated');
-      // Refetch happened via onSuccess if we used mutation hooks properly. 
-      // For simplicity here I'll just assume we might need a manual invalidation if not using the hook correctly.
     } catch (error) {
       toast.error('Failed to update announcement');
     }
@@ -60,8 +60,9 @@ export default function Announcements() {
 
   const handleTogglePin = async (announcement: Announcement) => {
     try {
-      await api.patch(`announcements/${announcement.id}/`, {
-        is_pinned: !announcement.is_pinned
+      await updateMutation.mutateAsync({
+        id: announcement.id,
+        data: { is_pinned: !announcement.is_pinned }
       });
       toast.success(announcement.is_pinned ? 'Unpinned' : 'Pinned');
     } catch (error) {

@@ -73,11 +73,25 @@ export const useCreateTask = () => {
   });
 };
 
-export const useUpdateTask = () => {
+export const usePartialUpdateTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: TaskUpdatePayload }) => {
       const response = await api.patch<TaskDetail>(`/admin/tasks/${id}/`, data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tasks', data.id] });
+    },
+  });
+};
+
+export const useFullUpdateTask = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: TaskCreatePayload }) => {
+      const response = await api.put<TaskDetail>(`/admin/tasks/${id}/`, data);
       return response.data;
     },
     onSuccess: (data) => {

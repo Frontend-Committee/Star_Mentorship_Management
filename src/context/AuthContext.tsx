@@ -39,9 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 2. If login is in progress, we are loading.
   const isLoading = (hasToken && !isFetched) || loginMutation.isPending;
   
-  // Use either the fetched user object OR the existence of a token as a fallback 
-  // to keep the UI 'authenticated' while the user profile loads.
-  const isAuthenticated = !!user || (hasToken && !isUserLoading);
+  // Consider 'authenticated' if we have a user OR if we're still in the process 
+  // of loading the user but have a token (to prevent premature redirects).
+  const isAuthenticated = !!user || (hasToken && isUserLoading);
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isLoading }}>

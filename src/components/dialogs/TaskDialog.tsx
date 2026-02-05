@@ -43,10 +43,8 @@ export function TaskDialog({
       setDescription(task.description);
       // Ensure date is in YYYY-MM-DD format for the input
       setDate(task.date.split('T')[0]);
-      // Note: If we want to support editing assigned users, we would need to populate selectedUsers here
-      // based on task data, but the current Task interface might not have this info populated.
-      // For now, we reset it or keep it empty for edits unless we fetch full task details.
-      setSelectedUsers([]);
+      // Pre-fill assigned users if available
+      setSelectedUsers(task.assigned_to || []);
     } else {
       setTitle('');
       setDescription('');
@@ -66,6 +64,7 @@ export function TaskDialog({
       title: title.trim(),
       description: description.trim(),
       date: isoDate,
+      users: selectedUsers,
       assigned_to: selectedUsers,
     });
   };

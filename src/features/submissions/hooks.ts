@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 import { Feedback, MemberSubmission, MemberSubmissionUpdatePayload, SubmissionCreatePayload } from '../../types';
 
-export const useSubmissions = () => {
+export const useSubmissions = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['member-submissions'],
     queryFn: async () => {
@@ -21,6 +21,7 @@ export const useSubmissions = () => {
       }
       return [] as MemberSubmission[];
     },
+    enabled: options?.enabled,
   });
 };
 

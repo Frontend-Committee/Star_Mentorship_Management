@@ -3,12 +3,14 @@ import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import StatCard from '@/components/dashboard/StatCard';
 import WeeklyTaskCard from '@/components/dashboard/WeeklyTaskCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/context/AuthContext';
-import { useUsers } from '@/features/auth/hooks';
 import { useAdminSessions, useMemberAttendance } from '@/features/sessions/hooks';
 import { useSubmissions } from '@/features/submissions/hooks';
 import { useAdminSubmissions, useAdminTasks, useMemberTasks } from '@/features/tasks/hooks';
+import { useMembersWithProgress } from '@/features/members/hooks';
+import { useCommitteeDetails } from '@/features/committees/hooks';
 import {
   BookOpen,
   CalendarCheck,
@@ -29,12 +31,16 @@ export default function Dashboard() {
   const isAdmin = user?.role === 'admin';
 
   // --- Data Fetching ---
-  const { data: users = [], isLoading: isLoadingUsers } = useUsers();
+  const { data: committee } = useCommitteeDetails();
+  const referenceId = committee?.reference_id;
+
+  const { data: membersResponse, isLoading: isLoadingUsers } = useMembersWithProgress({ enabled: isAdmin });
+  const users = useMemo(() => membersResponse?.results || [], [membersResponse]);
   const { data: adminSessions = [], isLoading: isLoadingSess } = useAdminSessions({ enabled: isAdmin });
   const { data: adminTasks = [], isLoading: isLoadingTasks } = useAdminTasks({ enabled: isAdmin });
   const { data: adminSubmissions = [], isLoading: isLoadingSubmissions } = useAdminSubmissions({ enabled: isAdmin });
-
-  const { data: memberAttendance = [], isLoading: isLoadingAtt } = useMemberAttendance({ enabled: !isAdmin });
+ 
+  const { data: memberAttendance = [], isLoading: isLoadingAtt } = useMemberAttendance(referenceId, { enabled: !isAdmin });
   const { data: memberTasks = [], isLoading: isLoadingMTasks } = useMemberTasks({ enabled: !isAdmin });
   const { data: memberSubmissions = [], isLoading: isLoadingMSubs } = useSubmissions();
   const { data: apiWeeks = [], isLoading: isLoadingWeeks } = useWeeks(user?.role);
@@ -47,7 +53,7 @@ export default function Dashboard() {
   const adminStats = useMemo(() => {
     if (!isAdmin) return null;
 
-    const totalMembers = users.length;
+    const totalMembers = membersResponse?.count || users.length;
 
     // Calculate Average Attendance
     let totalAttendancePercentage = 0;
@@ -70,37 +76,10 @@ export default function Dashboard() {
 
     // Calculate Member Progress for List
     const memberProgressList = users.slice(0, 5).map(member => {
-      // Attendance
-      let attended = 0;
-      let total = 0;
-      adminSessions.forEach(s => {
-        if (s.attendance) {
-          const record = s.attendance.find(a => {
-            const userId = typeof a.user === 'object' ? a.user.id : a.user;
-            return userId === member.id;
-          });
-          if (record) {
-            total++;
-            if (record.status) attended++;
-          }
-        }
-      });
-      const attendancePct = total > 0 ? Math.round((attended / total) * 100) : 0;
-
-      // Task Progress
-      const submissionCount = adminSubmissions.filter(sub => {
-        const subUserId = typeof sub.user === 'object' ? sub.user.id : sub.user;
-        return subUserId === member.id;
-      }).length;
-
-      const taskProgressPct = adminTasks.length > 0
-        ? Math.round((submissionCount / adminTasks.length) * 100)
-        : 0;
-
       return {
         ...member,
-        attendance: attendancePct,
-        progress: taskProgressPct
+        attendance: member.session_attendance || 0,
+        progress: member.week_progress || 0
       };
     });
 
@@ -110,7 +89,7 @@ export default function Dashboard() {
       activeTasks,
       memberProgressList
     };
-  }, [isAdmin, users, adminSessions, adminTasks, adminSubmissions]);
+  }, [isAdmin, users, adminSessions, adminTasks, membersResponse?.count]);
 
   // Transform API weeks to UI format
   const weeks = useMemo<WeekContent[]>(() => {
@@ -140,11 +119,11 @@ export default function Dashboard() {
         title: week.title || '',
         description: firstItem?.notes || firstItem?.title || '', 
         isCompleted,
-        items: items as any,
-        notes: (items as any[]).find((item: any) => item.title?.toLowerCase().includes('note'))?.resource || null,
-        slides: (items as any[]).find((item: any) => item.title?.toLowerCase().includes('slide'))?.resource || null,
-        challengeLink: (items as any[]).find((item: any) => item.title?.toLowerCase().includes('challenge'))?.resource || null,
-        formLink: (items as any[]).find((item: any) => item.title?.toLowerCase().includes('form'))?.resource || null,
+        items: items,
+        notes: items.find((item) => item.title?.toLowerCase().includes('note'))?.resource || null,
+        slides: items.find((item) => item.title?.toLowerCase().includes('slide'))?.resource || null,
+        challengeLink: items.find((item) => item.title?.toLowerCase().includes('challenge'))?.resource || null,
+        formLink: items.find((item) => item.title?.toLowerCase().includes('form'))?.resource || null,
       };
     });
   }, [apiWeeks, user?.id]);
@@ -182,6 +161,8 @@ export default function Dashboard() {
     return incomplete || weeks[weeks.length - 1];
   }, [weeks]);
 
+
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -195,13 +176,13 @@ export default function Dashboard() {
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           {isAdmin
-            ? "Here's an overview of your committee's progress"
-            : "Track your learning journey and stay up to date"}
+            ? `Here's an overview of ${committee?.name || 'your committee'}'s progress`
+            : `Track your learning journey in ${committee?.name || 'the committee'} and stay up to date`}
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {isAdmin ? (
           <>
             <StatCard
@@ -209,12 +190,6 @@ export default function Dashboard() {
               value={adminStats?.totalMembers || 0}
               icon={Users}
               trend={{ value: users.length > 0 ? 100 : 0, isPositive: true }}
-            />
-            <StatCard
-              title="Avg. Attendance"
-              value={`${adminStats?.avgAttendance || 0}%`}
-              icon={CalendarCheck}
-              trend={{ value: 5, isPositive: true }}
             />
             <StatCard
               title="Content Published"
@@ -233,12 +208,6 @@ export default function Dashboard() {
               title="Weeks Completed"
               value={`${memberStats?.completedWeeks || 0}/${memberStats?.totalWeeksCount || 0}`}
               icon={BookOpen}
-            />
-            <StatCard
-              title="Attendance"
-              value={`${memberStats?.attendancePercentage || 0}%`}
-              icon={CalendarCheck}
-              trend={{ value: 5, isPositive: true }}
             />
             <StatCard
               title="Tasks Submitted"
@@ -302,19 +271,22 @@ export default function Dashboard() {
                         {member.first_name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                          {member.first_name} {member.last_name}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                            {member.first_name} {member.last_name}
+                          </p>
+                          {member.level && (
+                             <Badge variant="secondary" className="px-1.5 py-0 text-[10px] h-4 bg-primary/10 text-primary border-none">
+                               L{member.level}
+                             </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mt-1">
                           <Progress value={member.progress} className="h-1.5 flex-1" />
                           <span className="text-xs text-muted-foreground w-7 sm:w-8 text-right">
                             {member.progress}%
                           </span>
                         </div>
-                      </div>
-                      <div className="text-right hidden sm:block">
-                        <p className="text-xs text-muted-foreground">Attendance</p>
-                        <p className="text-sm font-medium text-foreground">{member.attendance}%</p>
                       </div>
                     </div>
                   ))}

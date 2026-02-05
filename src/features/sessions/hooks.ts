@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from '@/lib/api';
+import attendanceApi from '@/lib/attendanceApi';
 import { Attendance, AttendanceUpdatePayload, Session, SessionCreatePayload } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -9,7 +10,7 @@ export const useAdminSessions = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['admin-sessions'],
     queryFn: async () => {
-      const response = await api.get<any>('/admin/sessions/');
+      const response = await attendanceApi.get<any>('/sessions/front_committee/');
       // Handle DRF pagination
       if (response.data && Array.isArray(response.data.results)) {
         return response.data.results as Session[];
@@ -27,7 +28,7 @@ export const useAdminSession = (id: number) => {
   return useQuery({
     queryKey: ['admin-sessions', id],
     queryFn: async () => {
-      const response = await api.get<Session>(`/admin/sessions/${id}/`);
+      const response = await attendanceApi.get<Session>(`/sessions/front_committee/${id}/`);
       return response.data;
     },
     enabled: !!id,
@@ -38,7 +39,7 @@ export const useCreateSession = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: SessionCreatePayload) => {
-      const response = await api.post<Session>('/admin/sessions/', data);
+      const response = await attendanceApi.post<Session>('/sessions/front_committee/', data);
       return response.data;
     },
     onSuccess: () => {
@@ -54,7 +55,7 @@ export const useUpdateSession = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<SessionCreatePayload> }) => {
-      const response = await api.patch<Session>(`/admin/sessions/${id}/`, data);
+      const response = await attendanceApi.patch<Session>(`/sessions/front_committee/${id}/`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -67,7 +68,7 @@ export const useDeleteSession = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/admin/sessions/${id}/`);
+      await attendanceApi.delete(`/sessions/front_committee/${id}/`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sessions'] });
@@ -79,7 +80,7 @@ export const useUpdateAttendance = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: AttendanceUpdatePayload }) => {
-      const response = await api.patch<Attendance>(`/admin/attendances/${id}/`, data);
+      const response = await attendanceApi.patch<Attendance>(`/attendances/${id}/`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -94,7 +95,7 @@ export const useMemberSessions = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['member-sessions'],
     queryFn: async () => {
-      const response = await api.get<any>('/member/sessions/');
+      const response = await attendanceApi.get<any>('/sessions/front_committee/');
       if (response.data && Array.isArray(response.data.results)) {
         return response.data.results as Session[];
       }
@@ -107,11 +108,13 @@ export const useMemberSessions = (options?: { enabled?: boolean }) => {
   });
 };
 
-export const useMemberAttendance = (options?: { enabled?: boolean }) => {
+export const useMemberAttendance = (referenceId?: string | null, options?: { enabled?: boolean }) => {
   return useQuery({
-    queryKey: ['member-attendance'],
+    queryKey: ['member-attendance', referenceId],
     queryFn: async () => {
-      const response = await api.get<any>('/member/attendances/');
+      const response = await attendanceApi.get<any>('/attendances/', {
+        params: { reference_id: referenceId }
+      });
       if (response.data && Array.isArray(response.data.results)) {
         return response.data.results as Attendance[];
       }
@@ -120,6 +123,6 @@ export const useMemberAttendance = (options?: { enabled?: boolean }) => {
       }
       return [] as Attendance[];
     },
-    enabled: options?.enabled,
+    enabled: options?.enabled && !!referenceId,
   });
 };

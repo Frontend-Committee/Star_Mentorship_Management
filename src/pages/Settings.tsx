@@ -1,20 +1,56 @@
-import { useRef, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/context/AuthContext';
 import { useSetPassword } from '@/features/auth/hooks';
-import { Settings as SettingsIcon, Bell, Shield, Palette, Lock, Loader2 } from 'lucide-react';
+import { useCommitteeDetails, useUpdateCommittee } from '@/features/committees/hooks';
+import { useTheme } from '@/components/ThemeProvider';
+import { Settings as SettingsIcon, Palette, Lock, Loader2, Sun, Moon, Monitor } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const { data: committee, isLoading: isLoadingCommittee } = useCommitteeDetails();
+  const updateCommitteeMutation = useUpdateCommittee();
+  
+  const [committeeName, setCommitteeName] = useState('');
+  const [committeeDesc, setCommitteeDesc] = useState('');
+
+  // Update local state when committee data is loaded
+  useState(() => {
+    if (committee) {
+      setCommitteeName(committee.name);
+      setCommitteeDesc(committee.description || '');
+    }
+  });
+
+  // Effect to sync local state with fetched data
+  useMemo(() => {
+    if (committee) {
+      setCommitteeName(committee.name);
+      setCommitteeDesc(committee.description || '');
+    }
+  }, [committee]);
+
+  const handleUpdateCommittee = async () => {
+    try {
+      await updateCommitteeMutation.mutateAsync({
+        name: committeeName,
+        description: committeeDesc
+      });
+      toast.success('Committee updated successfully');
+    } catch (error) {
+      toast.error('Failed to update committee');
+    }
+  };
 
   return (
     <div className="space-y-8 max-w-3xl">
-      {/* Header */}
+      {/* Header ... */}
       <div className="space-y-1 animate-fade-in">
         <h1 className="text-3xl font-heading font-bold text-foreground">Settings</h1>
         <p className="text-muted-foreground">
@@ -25,110 +61,61 @@ export default function Settings() {
       {/* Committee Settings */}
       <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.05s' }}>
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <SettingsIcon className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle>Committee Settings</CardTitle>
-              <CardDescription>Configure your committee's basic settings</CardDescription>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <SettingsIcon className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Committee Settings</CardTitle>
+                <CardDescription>Configure your committee's basic settings</CardDescription>
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="committee-name">Committee Name</Label>
-            <Input id="committee-name" defaultValue={user?.committee} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input id="description" placeholder="Brief description of your committee" />
-          </div>
-          <Button variant="default">Save Changes</Button>
-        </CardContent>
-      </Card>
-
-      {/* Notification Settings */}
-      <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Bell className="w-4 h-4 text-primary" />
+          {isLoadingCommittee ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
-            <div>
-              <CardTitle>Notifications</CardTitle>
-              <CardDescription>Configure notification preferences</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Email Notifications</p>
-              <p className="text-sm text-muted-foreground">
-                Receive email updates for announcements
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Project Submissions</p>
-              <p className="text-sm text-muted-foreground">
-                Get notified when members submit projects
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Weekly Digest</p>
-              <p className="text-sm text-muted-foreground">
-                Receive a weekly summary of committee activity
-              </p>
-            </div>
-            <Switch />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Access Settings */}
-      <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.15s' }}>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Shield className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle>Access & Privacy</CardTitle>
-              <CardDescription>Manage access controls for your committee</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Public Progress Tracking</p>
-              <p className="text-sm text-muted-foreground">
-                Allow members to see each other's progress
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Anonymous Feedback</p>
-              <p className="text-sm text-muted-foreground">
-                Allow anonymous feedback on projects
-              </p>
-            </div>
-            <Switch />
-          </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="committee-name">Committee Name</Label>
+                <Input 
+                  id="committee-name" 
+                  value={committeeName} 
+                  onChange={(e) => setCommitteeName(e.target.value)} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input 
+                  id="description" 
+                  placeholder="Brief description of your committee" 
+                  value={committeeDesc} 
+                  onChange={(e) => setCommitteeDesc(e.target.value)} 
+                />
+              </div>
+              <Button 
+                variant="default" 
+                onClick={handleUpdateCommittee}
+                disabled={updateCommitteeMutation.isPending}
+              >
+                {updateCommitteeMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : 'Save Changes'}
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
 
       {/* Appearance */}
-      <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+      <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
@@ -141,16 +128,34 @@ export default function Settings() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
+          <div className="space-y-4">
             <div>
-              <p className="font-medium text-foreground">Theme</p>
+              <Label className="text-base">Theme Preference</Label>
               <p className="text-sm text-muted-foreground">
-                Current theme: Purple (Default)
+                Choose how the platform looks to you
               </p>
             </div>
-            <Button variant="outline" size="sm">
-              Customize
-            </Button>
+            
+            <Tabs 
+              defaultValue={theme} 
+              onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}
+              className="w-full max-w-md"
+            >
+              <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1">
+                <TabsTrigger value="light" className="flex items-center gap-2">
+                  <Sun className="w-4 h-4" />
+                  <span>Light</span>
+                </TabsTrigger>
+                <TabsTrigger value="dark" className="flex items-center gap-2">
+                  <Moon className="w-4 h-4" />
+                  <span>Dark</span>
+                </TabsTrigger>
+                <TabsTrigger value="system" className="flex items-center gap-2">
+                  <Monitor className="w-4 h-4" />
+                  <span>System</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </CardContent>
       </Card>
@@ -190,8 +195,23 @@ function ChangePasswordSection() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: unknown) {
-      const err = error as { message?: string };
-      toast.error(err.message || "Failed to change password");
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { data: Record<string, string[]> } };
+        const data = axiosError.response.data;
+        
+        // Handle field-specific errors
+        if (data.current_password) {
+          toast.error(`Current Password: ${data.current_password[0]}`);
+        } else if (data.new_password) {
+          toast.error(`New Password: ${data.new_password[0]}`);
+        } else if (data.non_field_errors) {
+          toast.error(data.non_field_errors[0]);
+        } else {
+          toast.error("Failed to change password. Please check your credentials.");
+        }
+      } else {
+        toast.error(error instanceof Error ? error.message : "Failed to change password");
+      }
     }
   };
 

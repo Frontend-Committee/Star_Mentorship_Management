@@ -1,3 +1,4 @@
+import { TaskDialog } from '@/components/dialogs/TaskDialog';
 import { FeedbackDialog } from '@/components/dialogs/FeedbackDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,11 +19,14 @@ import {
   useCreateFeedback,
   useMemberTask,
   useUpdateFeedback,
+  usePartialUpdateTask,
+  useDeleteTask,
 } from '@/features/tasks/hooks';
-import { FeedbackCreatePayload, Submission } from '@/types';
-import { CalendarDays, CheckCircle2, Clock, ExternalLink, Loader2, MessageSquare } from 'lucide-react';
+import { FeedbackCreatePayload, Submission, TaskCreatePayload } from '@/types';
+import { CalendarDays, CheckCircle2, Clock, Edit, ExternalLink, Loader2, MessageSquare, Trash2 } from 'lucide-react';
+import { DeleteConfirmationDialog } from '@/components/dialogs/DeleteConfirmationDialog';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function TaskDetailsPage() {
@@ -51,12 +55,17 @@ export default function TaskDetailsPage() {
   const { mutate: updateSubmission, isPending: isUpdatingSub } = useUpdateSubmission();
   const { mutate: createFeedback, isPending: isCreatingFeedback } = useCreateFeedback();
   const { mutate: updateFeedback, isPending: isUpdatingFeedback } = useUpdateFeedback();
+  const { mutate: partialUpdateTask, isPending: isUpdatingTask } = usePartialUpdateTask();
+  const { mutate: deleteTask, isPending: isDeletingTask } = useDeleteTask();
+  const navigate = useNavigate();
 
   // State
   const [submissionUrl, setSubmissionUrl] = useState('');
   const [submissionNote, setSubmissionNote] = useState('');
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (mySubmission) {
@@ -114,6 +123,25 @@ export default function TaskDetailsPage() {
     setSelectedSubmission(submission);
     setIsFeedbackDialogOpen(true);
   };
+   
+  const handleUpdateTask = (data: TaskCreatePayload) => {
+    // We treat edits from dialog as PATCH updates for now, or we could check if fields are missing.
+    // Given the dialog sends full data, we can use partialUpdateTask as well since it accepts TaskUpdatePayload.
+    // However, data from dialog is TaskCreatePayload (all fields required by UI but payload wise similar).
+    
+    partialUpdateTask({ id: taskId, data }, {
+      onSuccess: () => {
+        toast.success("Task updated successfully");
+        setIsTaskDialogOpen(false);
+      },
+      onError: (error: any) => {
+        const errorMessage = error.response?.data
+          ? Object.entries(error.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
+          : "Failed to update task";
+        toast.error(errorMessage);
+      }
+    });
+  };
 
   if (isTaskLoading) {
     return (
@@ -145,6 +173,18 @@ export default function TaskDetailsPage() {
               </span>
             </div>
           </div>
+          {isAdmin && (
+            <div className="flex gap-2">
+              <Button onClick={() => setIsTaskDialogOpen(true)} variant="outline" className="gap-2">
+                <Edit className="w-4 h-4" />
+                Edit Task
+              </Button>
+              <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" className="gap-2">
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </Button>
+            </div>
+          )}
         </div>
         <Card>
           <CardHeader>
@@ -205,7 +245,7 @@ export default function TaskDetailsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
+                          {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : '-'}
                         </TableCell>
                         <TableCell>
                           {sub.feedback ? (
@@ -261,7 +301,7 @@ export default function TaskDetailsPage() {
                     <div>
                       <h4 className="font-semibold text-green-900 dark:text-green-100">Submitted</h4>
                       <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                        You have submitted this task on {mySubmission.created_at ? new Date(mySubmission.created_at).toLocaleDateString() : 'Unknown date'}.
+                        You have submitted this task on {mySubmission.submitted_at ? new Date(mySubmission.submitted_at).toLocaleDateString() : 'Unknown date'}.
                       </p>
                     </div>
                   </div>
@@ -403,6 +443,15 @@ export default function TaskDetailsPage() {
         </div>
       )}
 
+      {/* Admin Task Edit Dialog */}
+      <TaskDialog
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+        onSubmit={handleUpdateTask}
+        task={task}
+        isLoading={isUpdatingTask}
+      />
+
       {/* Admin Feedback Dialog */}
       <FeedbackDialog
         open={isFeedbackDialogOpen}
@@ -410,6 +459,23 @@ export default function TaskDetailsPage() {
         onSubmit={handleFeedbackSubmit}
         submission={selectedSubmission}
         isLoading={isCreatingFeedback || isUpdatingFeedback}
+      />
+
+      <DeleteConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={() => {
+            deleteTask(taskId, {
+                onSuccess: () => {
+                    toast.success("Task deleted successfully");
+                    navigate('/tasks');
+                },
+                onError: () => toast.error("Failed to delete task")
+            });
+        }}
+        title="Delete Task"
+        description="Are you sure you want to delete this task? This action cannot be undone and will delete all member submissions associated with it."
+        isLoading={isDeletingTask}
       />
     </div>
   );
