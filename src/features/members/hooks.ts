@@ -6,17 +6,46 @@ export const useCommitteeMembers = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['committee-members'],
     queryFn: async () => {
-      const response = await api.get<PaginatedResponse<MemberMinimal> | MemberMinimal[]>('members/assign/?page_size=100');
-      
-      // Handle potential pagination or direct array
-      const data = response.data;
-      if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
-        return data.results;
+      let url = 'members/assign/?page_size=100';
+      let allResults: MemberMinimal[] = [];
+      let pageCount = 0;
+      const MAX_PAGES = 50;
+
+      while (url && pageCount < MAX_PAGES) {
+        const response = await api.get<PaginatedResponse<MemberMinimal> | MemberMinimal[]>(url);
+        const data = response.data;
+        
+        if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+           // It's a paginated response
+           allResults = [...allResults, ...data.results];
+           
+           if (data.next) {
+             try {
+               const nextUrl = new URL(data.next);
+               // Assuming backend URL structure is consistent
+               const pathParts = nextUrl.pathname.split('/api/');
+               if (pathParts.length > 1) {
+                 url = pathParts[1] + nextUrl.search;
+               } else {
+                 url = nextUrl.pathname + nextUrl.search;
+               }
+             } catch (e) {
+               console.error('Error parsing next URL:', data.next);
+               url = '';
+             }
+           } else {
+             url = '';
+           }
+        } else if (Array.isArray(data)) {
+          // Direct array response
+          return data;
+        } else {
+          // Unexpected format or empty
+          url = '';
+        }
+        pageCount++;
       }
-      if (Array.isArray(data)) {
-        return data;
-      }
-      return [];
+      return allResults;
     },
     enabled: options?.enabled ?? true,
   });

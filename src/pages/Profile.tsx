@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { useUpdateProfile } from '@/features/auth/hooks';
 import { toast } from 'sonner';
 import { useMemo, useRef } from 'react';
-import { useMemberAttendance } from '@/features/sessions/hooks';
+
 import { useWeeks } from '@/features/weeks/hooks';
 import { useCommitteeDetails } from '@/features/committees/hooks';
 import { ProfileSkeleton } from '@/components/profile/ProfileSkeleton';
@@ -24,20 +24,12 @@ export default function Profile() {
   const { data: committee } = useCommitteeDetails();
   const referenceId = committee?.reference_id;
   
-  const { data: memberAttendance = [], isLoading: isLoadingAtt } = useMemberAttendance(referenceId, { enabled: !isAdmin });
   const { data: apiWeeks = [], isLoading: isLoadingWeeks } = useWeeks(user?.role);
 
   const fullName = user ? `${user.first_name} ${user.last_name}` : '';
 
   const stats = useMemo(() => {
     if (!user) return null;
-
-    // Attendance
-    const attendedCount = memberAttendance.filter(a => a.status).length;
-    const totalSessions = memberAttendance.length;
-    const attendancePercentage = totalSessions > 0
-      ? Math.round((attendedCount / totalSessions) * 100)
-      : 0;
 
     // Weeks Progress
     const weeks = (apiWeeks as any[]).map((week: any) => {
@@ -55,15 +47,14 @@ export default function Profile() {
       : 0;
 
     return {
-      attendancePercentage,
       completedWeeks: completedWeeksCount,
       totalWeeks: totalWeeksCount,
       completionPercentage
     };
-  }, [user, memberAttendance, apiWeeks]);
+  }, [user, apiWeeks]);
 
   if (!user) return null;
-  if (isLoadingAtt || isLoadingWeeks) return <ProfileSkeleton />;
+  if (isLoadingWeeks) return <ProfileSkeleton />;
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -152,14 +143,10 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border/50">
+            <div className="grid grid-cols-1 gap-4 mt-6 pt-6 border-t border-border/50">
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary">{stats?.completedWeeks}</div>
                 <div className="text-xs text-muted-foreground">Weeks Completed</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{stats?.attendancePercentage}%</div>
-                <div className="text-xs text-muted-foreground">Attendance</div>
               </div>
             </div>
           </CardContent>
@@ -213,13 +200,6 @@ export default function Profile() {
                   <span className="font-medium text-foreground">{stats?.completionPercentage}%</span>
                 </div>
                 <Progress value={stats?.completionPercentage} className="h-2" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Attendance Rate</span>
-                  <span className="font-medium text-foreground">{stats?.attendancePercentage}%</span>
-                </div>
-                <Progress value={stats?.attendancePercentage} className="h-2" />
               </div>
             </CardContent>
           </Card>

@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { 
   Mail, 
   TrendingUp, 
-  CalendarCheck, 
+ 
   FileText, 
   Star,
   StickyNote,
@@ -149,21 +149,7 @@ export function MemberProfileDialog({
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-card border border-border/40 shadow-sm space-y-3">
-              <div className="flex items-center gap-2 text-blue-500">
-                <CalendarCheck className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">Attendance</span>
-              </div>
-              <div className="space-y-1">
-                <span className={cn(
-                  "text-2xl font-bold tabular-nums block",
-                  member.attendance >= 80 ? "text-green-500" : member.attendance >= 50 ? "text-amber-500" : "text-destructive"
-                )}>
-                  {member.attendance}%
-                </span>
-                <p className="text-[10px] text-muted-foreground font-medium uppercase">Sessions attended</p>
-              </div>
-            </div>
+
 
             <div className="p-4 rounded-xl bg-card border border-border/40 shadow-sm space-y-3">
               <div className="flex items-center gap-2 text-purple-500">

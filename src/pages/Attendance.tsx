@@ -9,7 +9,6 @@ import {
   useAdminSessions,
   useCreateSession,
   useDeleteSession,
-  useMemberAttendance,
   useMemberSessions,
   useUpdateSession
 } from '@/features/sessions/hooks';
@@ -20,18 +19,14 @@ import { Session, SessionCreatePayload } from '@/types';
 import {
   CalendarCheck,
   CalendarDays,
-  CheckCircle2,
   Clock,
   Loader2,
   MapPin,
   Plus,
-  XCircle,
-  Globe,
-  Users as UsersIcon
 } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Attendance() {
+export default function Sessions() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const { toast } = useToast();
@@ -41,8 +36,7 @@ export default function Attendance() {
 
   const { data: adminSessions, isLoading: isAdminLoading } = useAdminSessions({ enabled: isAdmin });
   const { data: memberSessions, isLoading: isMemberLoading } = useMemberSessions({ enabled: !isAdmin && !!user });
-  const { data: memberAttendance } = useMemberAttendance(referenceId, { enabled: !isAdmin && !!user });
-
+  
   const sessions = (isAdmin ? adminSessions : memberSessions) || [];
   const isLoading = isAdmin ? isAdminLoading : isMemberLoading;
 
@@ -126,12 +120,12 @@ export default function Attendance() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold text-foreground">
-            Attendance & Sessions
+            Sessions
           </h1>
           <p className="text-muted-foreground mt-1">
             {isAdmin
-              ? "Overview of committee sessions and attendance."
-              : "View your attendance record and upcoming sessions."}
+              ? "Overview of committee sessions."
+              : "View your upcoming sessions."}
           </p>
         </div>
       </div>
@@ -172,11 +166,6 @@ export default function Attendance() {
             };
             const sessionDate = parseDate(session.date);
 
-            // For members, find their status (prioritize memberAttendance endpoint, fallback to session.attendance)
-            const memberRecord = !isAdmin
-              ? (memberAttendance?.find(a => a.session === session.id) || (session.attendance?.length ? session.attendance[0] : null))
-              : null;
-
             return (
               <Card
                 key={session.id}
@@ -193,16 +182,6 @@ export default function Attendance() {
                          {session.title || (session as any).name || 'Untitled Session'}
                       </span>
                     </CardTitle>
-                    {!isAdmin && memberRecord && (
-                      <Badge
-                        variant={memberRecord.status ? "default" : "secondary"}
-                        className={cn(
-                          memberRecord.status ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-red-100 text-red-700 hover:bg-red-100"
-                        )}
-                      >
-                        {memberRecord.status ? "Present" : "Absent"}
-                      </Badge>
-                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1.5">

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/context/AuthContext';
-import { useAdminSessions, useMemberAttendance } from '@/features/sessions/hooks';
+import { useAdminSessions } from '@/features/sessions/hooks';
 import { useSubmissions } from '@/features/submissions/hooks';
 import { useAdminSubmissions, useAdminTasks, useMemberTasks } from '@/features/tasks/hooks';
 import { useMembersWithProgress } from '@/features/members/hooks';
@@ -18,12 +18,15 @@ import {
   Clock,
   Star,
   TrendingUp,
-  Users
+  Users,
+  ArrowUpRight
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useAnnouncements } from '@/features/announcements/hooks';
 import { useWeeks } from '@/features/weeks/hooks';
 import { WeekContent } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 export default function Dashboard() {
@@ -40,56 +43,35 @@ export default function Dashboard() {
   const { data: adminTasks = [], isLoading: isLoadingTasks } = useAdminTasks({ enabled: isAdmin });
   const { data: adminSubmissions = [], isLoading: isLoadingSubmissions } = useAdminSubmissions({ enabled: isAdmin });
  
-  const { data: memberAttendance = [], isLoading: isLoadingAtt } = useMemberAttendance(referenceId, { enabled: !isAdmin });
   const { data: memberTasks = [], isLoading: isLoadingMTasks } = useMemberTasks({ enabled: !isAdmin });
   const { data: memberSubmissions = [], isLoading: isLoadingMSubs } = useSubmissions();
   const { data: apiWeeks = [], isLoading: isLoadingWeeks } = useWeeks(user?.role);
   const { data: announcements = [], isLoading: isLoadingAnnouncements } = useAnnouncements();
 
   const isLoading = isLoadingUsers || isLoadingWeeks || isLoadingAnnouncements || 
-                    (isAdmin ? (isLoadingSess || isLoadingTasks || isLoadingSubmissions) : (isLoadingAtt || isLoadingMTasks || isLoadingMSubs));
+                    (isAdmin ? (isLoadingSess || isLoadingTasks || isLoadingSubmissions) : (isLoadingMTasks || isLoadingMSubs));
 
   // --- Admin Stats Calculation ---
   const adminStats = useMemo(() => {
     if (!isAdmin) return null;
 
     const totalMembers = membersResponse?.count || users.length;
-
-    // Calculate Average Attendance
-    let totalAttendancePercentage = 0;
-    let sessionsWithAttendance = 0;
-
-    adminSessions.forEach(session => {
-      if (session.attendance && session.attendance.length > 0) {
-        const presentCount = session.attendance.filter(a => typeof a.user === 'object' ? a.status : a.status).length;
-        const sessionPercentage = (presentCount / session.attendance.length) * 100;
-        totalAttendancePercentage += sessionPercentage;
-        sessionsWithAttendance++;
-      }
-    });
-
-    const avgAttendance = sessionsWithAttendance > 0
-      ? Math.round(totalAttendancePercentage / sessionsWithAttendance)
-      : 0;
-
     const activeTasks = adminTasks.length;
 
     // Calculate Member Progress for List
-    const memberProgressList = users.slice(0, 5).map(member => {
+    const memberProgressList = users.map(member => {
       return {
         ...member,
-        attendance: member.session_attendance || 0,
         progress: member.week_progress || 0
       };
     });
 
     return {
       totalMembers,
-      avgAttendance,
       activeTasks,
       memberProgressList
     };
-  }, [isAdmin, users, adminSessions, adminTasks, membersResponse?.count]);
+  }, [isAdmin, users, adminTasks, membersResponse?.count]);
 
   // Transform API weeks to UI format
   const weeks = useMemo<WeekContent[]>(() => {
@@ -108,8 +90,6 @@ export default function Dashboard() {
         );
       });
 
-      
-      
       const weekNumber = (week as { number?: number }).number || 0;
       const firstItem = items[0] as { notes?: string; title?: string };
       
@@ -132,12 +112,6 @@ export default function Dashboard() {
   const memberStats = useMemo(() => {
     if (isAdmin) return null;
 
-    const attendedCount = memberAttendance.filter(a => a.status).length;
-    const totalSessions = memberAttendance.length;
-    const attendancePercentage = totalSessions > 0
-      ? Math.round((attendedCount / totalSessions) * 100)
-      : 0;
-
     const submittedCount = memberSubmissions.length;
 
     const completedWeeksCount = weeks.filter(w => w.isCompleted).length;
@@ -147,21 +121,18 @@ export default function Dashboard() {
       : 0;
 
     return {
-      attendancePercentage,
       submittedCount,
       completedWeeks: completedWeeksCount,
       totalWeeksCount,
       curriculumProgress
     };
-  }, [isAdmin, memberAttendance, memberSubmissions, weeks]);
+  }, [isAdmin, memberSubmissions, weeks]);
 
   const currentWeek = useMemo(() => {
     if (weeks.length === 0) return null;
     const incomplete = weeks.find((w) => !w.isCompleted);
     return incomplete || weeks[weeks.length - 1];
   }, [weeks]);
-
-
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -254,44 +225,63 @@ export default function Dashboard() {
 
           {/* Admin: Member Overview */}
           {isAdmin && (
-            <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base sm:text-lg font-heading">Member Progress</CardTitle>
-                <Star className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <Card className="border-border/50 animate-fade-in flex flex-col" style={{ animationDelay: '0.1s' }}>
+              <CardHeader className="flex flex-row items-center justify-between pb-4">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-primary fill-primary/20" />
+                  <CardTitle className="text-base sm:text-lg font-heading">Member Progress</CardTitle>
+                </div>
+                <Button variant="ghost" size="sm" asChild className="h-8 gap-1 text-xs text-muted-foreground hover:text-primary rounded-full px-3">
+                  <Link to="/members">
+                    View All
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </Link>
+                </Button>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3 sm:space-y-4">
+              <CardContent className="p-0 flex-1 min-h-0">
+                <div className="max-h-[320px] overflow-y-auto custom-scrollbar p-6 pt-0 space-y-1">
                   {adminStats?.memberProgressList.map((member, index) => (
                     <div
                       key={member.id}
-                      className="flex items-center gap-3 sm:gap-4 animate-slide-in"
+                      className="group flex items-center gap-3 sm:gap-4 p-2.5 rounded-xl hover:bg-muted/40 transition-all duration-200 animate-slide-in cursor-default"
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-medium text-xs sm:text-sm shrink-0">
-                        {member.first_name.charAt(0)}
+                      <div className="relative">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary font-bold text-xs sm:text-sm shrink-0 border border-primary/10 group-hover:border-primary/20 transition-colors">
+                          {member.first_name.charAt(0)}
+                        </div>
+                        {member.level && (
+                          <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 border border-border shadow-sm">
+                             <Badge variant="secondary" className="px-1 py-0 text-[8px] h-3.5 min-w-[14px] justify-center bg-primary/10 text-primary border-none">
+                               {member.level}
+                             </Badge>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                      
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                             {member.first_name} {member.last_name}
                           </p>
-                          {member.level && (
-                             <Badge variant="secondary" className="px-1.5 py-0 text-[10px] h-4 bg-primary/10 text-primary border-none">
-                               L{member.level}
-                             </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Progress value={member.progress} className="h-1.5 flex-1" />
-                          <span className="text-xs text-muted-foreground w-7 sm:w-8 text-right">
+                          <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors">
                             {member.progress}%
                           </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted/80 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 ease-out"
+                            style={{ width: `${member.progress}%` }}
+                          />
                         </div>
                       </div>
                     </div>
                   ))}
                   {(!adminStats?.memberProgressList || adminStats.memberProgressList.length === 0) && (
-                    <p className="text-sm text-muted-foreground text-center">No members found.</p>
+                    <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                      <Users className="w-8 h-8 mb-2 opacity-20" />
+                      <p className="text-sm">No members found</p>
+                    </div>
                   )}
                 </div>
               </CardContent>

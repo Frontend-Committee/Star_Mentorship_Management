@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useMembersWithProgress, useDeleteMember, useCommitteeMembers } from '@/features/members/hooks';
 import { toast } from '@/hooks/use-toast';
 import { Member, MemberMinimal } from '@/types';
-import { CalendarCheck, Crown, Eye, Loader2, Mail, Search, TrendingUp, Shield, Users as UsersIcon, ChevronRight } from 'lucide-react';
+import { Crown, Eye, Loader2, Mail, Search, TrendingUp, Shield, Users as UsersIcon, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -233,10 +233,6 @@ export default function Members() {
                       <p className="text-xs text-muted-foreground">Progress</p>
                       <p className="text-lg font-bold text-foreground">{bestMember.progress}%</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Attendance</p>
-                      <p className="text-lg font-bold text-green-600 dark:text-green-400">{bestMember.attendance}%</p>
-                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -376,14 +372,7 @@ function MemberCard({ member, index, onAction, showProgress = false, isAdmin }: 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1 p-2 rounded-xl bg-muted/30 border border-border/10">
-                <div className="flex items-center gap-1.5 text-primary">
-                  <CalendarCheck className="w-3 h-3" />
-                  <span className="text-[10px] font-bold uppercase opacity-70">Attendance</span>
-                </div>
-                <span className="text-sm font-bold">{member.attendance}%</span>
-              </div>
+            <div className="grid grid-cols-1 gap-3">
               <div className="flex flex-col gap-1 p-2 rounded-xl bg-muted/30 border border-border/10">
                 <div className="flex items-center gap-1.5 text-accent">
                   <TrendingUp className="w-3 h-3" />
