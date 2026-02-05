@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useCommitteeDetails } from '@/features/committees/hooks';
 
 const memberNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -57,22 +58,23 @@ function SidebarContent({
   onNavClick?: () => void;
 }) {
   const { user, logout } = useAuth();
+  const { data: committee } = useCommitteeDetails();
   const navItems = user?.role === 'admin' ? adminNavItems : memberNavItems;
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden shrink-0">
-          <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-full h-full object-contain" />
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-white/10 dark:bg-white/90">
+          <img src="/MentorshipWebsiteIcon.svg" alt="STAR Logo" className="w-full h-full object-contain" />
         </div>
         {!isCollapsed && (
           <div className="overflow-hidden">
             <h1 className="font-heading font-bold text-sidebar-foreground truncate">
-              STAR
+              {committee?.name || 'STAR'}
             </h1>
             <p className="text-xs text-sidebar-foreground/60 truncate">
-              {user?.committee ? `Committee #${user.committee}` : 'Member'}
+              {committee?.name ? 'Mentorship' : (user?.committee ? `Committee #${user.committee}` : 'Member')}
             </p>
           </div>
         )}

@@ -10,6 +10,7 @@ import { useAdminSessions, useMemberAttendance } from '@/features/sessions/hooks
 import { useSubmissions } from '@/features/submissions/hooks';
 import { useAdminSubmissions, useAdminTasks, useMemberTasks } from '@/features/tasks/hooks';
 import { useMembersWithProgress } from '@/features/members/hooks';
+import { useCommitteeDetails } from '@/features/committees/hooks';
 import {
   BookOpen,
   CalendarCheck,
@@ -30,13 +31,16 @@ export default function Dashboard() {
   const isAdmin = user?.role === 'admin';
 
   // --- Data Fetching ---
+  const { data: committee } = useCommitteeDetails();
+  const referenceId = committee?.reference_id;
+
   const { data: membersResponse, isLoading: isLoadingUsers } = useMembersWithProgress({ enabled: isAdmin });
   const users = useMemo(() => membersResponse?.results || [], [membersResponse]);
   const { data: adminSessions = [], isLoading: isLoadingSess } = useAdminSessions({ enabled: isAdmin });
   const { data: adminTasks = [], isLoading: isLoadingTasks } = useAdminTasks({ enabled: isAdmin });
   const { data: adminSubmissions = [], isLoading: isLoadingSubmissions } = useAdminSubmissions({ enabled: isAdmin });
-
-  const { data: memberAttendance = [], isLoading: isLoadingAtt } = useMemberAttendance({ enabled: !isAdmin });
+ 
+  const { data: memberAttendance = [], isLoading: isLoadingAtt } = useMemberAttendance(referenceId, { enabled: !isAdmin });
   const { data: memberTasks = [], isLoading: isLoadingMTasks } = useMemberTasks({ enabled: !isAdmin });
   const { data: memberSubmissions = [], isLoading: isLoadingMSubs } = useSubmissions();
   const { data: apiWeeks = [], isLoading: isLoadingWeeks } = useWeeks(user?.role);
@@ -157,6 +161,8 @@ export default function Dashboard() {
     return incomplete || weeks[weeks.length - 1];
   }, [weeks]);
 
+
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -170,8 +176,8 @@ export default function Dashboard() {
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           {isAdmin
-            ? "Here's an overview of your committee's progress"
-            : "Track your learning journey and stay up to date"}
+            ? `Here's an overview of ${committee?.name || 'your committee'}'s progress`
+            : `Track your learning journey in ${committee?.name || 'the committee'} and stay up to date`}
         </p>
       </div>
 

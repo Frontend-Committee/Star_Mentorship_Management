@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { useSetPassword } from '@/features/auth/hooks';
-import { useCommitteeDetails } from '@/features/committees/hooks';
+import { useCommitteeDetails, useUpdateCommittee } from '@/features/committees/hooks';
 import { useTheme } from '@/components/ThemeProvider';
 import { Settings as SettingsIcon, Palette, Lock, Loader2, Sun, Moon, Monitor } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,11 +14,43 @@ import { toast } from 'sonner';
 export default function Settings() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { data: committee, isLoading: isLoadingCommittee } = useCommitteeDetails(user?.committee);
+  const { data: committee, isLoading: isLoadingCommittee } = useCommitteeDetails();
+  const updateCommitteeMutation = useUpdateCommittee();
+  
+  const [committeeName, setCommitteeName] = useState('');
+  const [committeeDesc, setCommitteeDesc] = useState('');
+
+  // Update local state when committee data is loaded
+  useState(() => {
+    if (committee) {
+      setCommitteeName(committee.name);
+      setCommitteeDesc(committee.description || '');
+    }
+  });
+
+  // Effect to sync local state with fetched data
+  useMemo(() => {
+    if (committee) {
+      setCommitteeName(committee.name);
+      setCommitteeDesc(committee.description || '');
+    }
+  }, [committee]);
+
+  const handleUpdateCommittee = async () => {
+    try {
+      await updateCommitteeMutation.mutateAsync({
+        name: committeeName,
+        description: committeeDesc
+      });
+      toast.success('Committee updated successfully');
+    } catch (error) {
+      toast.error('Failed to update committee');
+    }
+  };
 
   return (
     <div className="space-y-8 max-w-3xl">
-      {/* Header */}
+      {/* Header ... */}
       <div className="space-y-1 animate-fade-in">
         <h1 className="text-3xl font-heading font-bold text-foreground">Settings</h1>
         <p className="text-muted-foreground">
@@ -50,13 +82,33 @@ export default function Settings() {
             <>
               <div className="space-y-2">
                 <Label htmlFor="committee-name">Committee Name</Label>
-                <Input id="committee-name" defaultValue={committee?.name || ''} />
+                <Input 
+                  id="committee-name" 
+                  value={committeeName} 
+                  onChange={(e) => setCommitteeName(e.target.value)} 
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Input id="description" placeholder="Brief description of your committee" defaultValue={committee?.description || ''} />
+                <Input 
+                  id="description" 
+                  placeholder="Brief description of your committee" 
+                  value={committeeDesc} 
+                  onChange={(e) => setCommitteeDesc(e.target.value)} 
+                />
               </div>
-              <Button variant="default">Save Changes</Button>
+              <Button 
+                variant="default" 
+                onClick={handleUpdateCommittee}
+                disabled={updateCommitteeMutation.isPending}
+              >
+                {updateCommitteeMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : 'Save Changes'}
+              </Button>
             </>
           )}
         </CardContent>
