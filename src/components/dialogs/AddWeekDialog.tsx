@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -25,9 +25,16 @@ export function AddWeekDialog({
   onOpenChange,
   nextWeekNumber,
 }: AddWeekDialogProps) {
+  const [number, setNumber] = useState(nextWeekNumber);
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
+  useEffect(() => {
+    if (open) {
+      setNumber(nextWeekNumber);
+    }
+  }, [open, nextWeekNumber]);
   
   const createWeek = useCreateWeek();
 
@@ -51,7 +58,7 @@ export function AddWeekDialog({
 
     try {
       await createWeek.mutateAsync({
-        number: nextWeekNumber,
+        number: number,
         title: title.trim(),
         start_date: startDate, // Send YYYY-MM-DD string directly
         end_date: endDate,     // Send YYYY-MM-DD string directly
@@ -62,7 +69,7 @@ export function AddWeekDialog({
       setStartDate('');
       setEndDate('');
       onOpenChange(false);
-      toast.success(`Week ${nextWeekNumber} created successfully`);
+      toast.success(`Week ${number} created successfully`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create week';
       toast.error(errorMessage);
@@ -73,21 +80,35 @@ export function AddWeekDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="font-heading">Add Week {nextWeekNumber}</DialogTitle>
+          <DialogTitle className="font-heading">Add Week {number}</DialogTitle>
           <DialogDescription>
             Create a new week for your mentorship program.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              placeholder="e.g., Introduction to Web Development"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
+          <div className="grid grid-cols-4 gap-4">
+            <div className="col-span-1 space-y-2">
+              <Label htmlFor="number">No. *</Label>
+              <Input
+                id="number"
+                type="number"
+                placeholder="1"
+                value={number}
+                onChange={(e) => setNumber(parseInt(e.target.value) || 0)}
+                required
+              />
+            </div>
+
+            <div className="col-span-3 space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                placeholder="e.g., Introduction to Web Development"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+            </div>
           </div>
           
           <div className="space-y-2">
