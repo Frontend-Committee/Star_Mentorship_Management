@@ -1,17 +1,19 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/context/AuthContext';
 import { useSetPassword } from '@/features/auth/hooks';
 import { useCommitteeDetails } from '@/features/committees/hooks';
-import { Settings as SettingsIcon, Bell, Shield, Palette, Lock, Loader2 } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
+import { Settings as SettingsIcon, Palette, Lock, Loader2, Sun, Moon, Monitor } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { data: committee, isLoading: isLoadingCommittee } = useCommitteeDetails(user?.committee);
 
   return (
@@ -60,87 +62,8 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {/* Notification Settings */}
-      <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Bell className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle>Notifications</CardTitle>
-              <CardDescription>Configure notification preferences</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Email Notifications</p>
-              <p className="text-sm text-muted-foreground">
-                Receive email updates for announcements
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Project Submissions</p>
-              <p className="text-sm text-muted-foreground">
-                Get notified when members submit projects
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Weekly Digest</p>
-              <p className="text-sm text-muted-foreground">
-                Receive a weekly summary of committee activity
-              </p>
-            </div>
-            <Switch />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Access Settings */}
-      <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.15s' }}>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Shield className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle>Access & Privacy</CardTitle>
-              <CardDescription>Manage access controls for your committee</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Public Progress Tracking</p>
-              <p className="text-sm text-muted-foreground">
-                Allow members to see each other's progress
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Anonymous Feedback</p>
-              <p className="text-sm text-muted-foreground">
-                Allow anonymous feedback on projects
-              </p>
-            </div>
-            <Switch />
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Appearance */}
-      <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+      <Card className="border-border/50 animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
@@ -153,16 +76,34 @@ export default function Settings() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
+          <div className="space-y-4">
             <div>
-              <p className="font-medium text-foreground">Theme</p>
+              <Label className="text-base">Theme Preference</Label>
               <p className="text-sm text-muted-foreground">
-                Current theme: Purple (Default)
+                Choose how the platform looks to you
               </p>
             </div>
-            <Button variant="outline" size="sm">
-              Customize
-            </Button>
+            
+            <Tabs 
+              defaultValue={theme} 
+              onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}
+              className="w-full max-w-md"
+            >
+              <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1">
+                <TabsTrigger value="light" className="flex items-center gap-2">
+                  <Sun className="w-4 h-4" />
+                  <span>Light</span>
+                </TabsTrigger>
+                <TabsTrigger value="dark" className="flex items-center gap-2">
+                  <Moon className="w-4 h-4" />
+                  <span>Dark</span>
+                </TabsTrigger>
+                <TabsTrigger value="system" className="flex items-center gap-2">
+                  <Monitor className="w-4 h-4" />
+                  <span>System</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </CardContent>
       </Card>
