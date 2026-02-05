@@ -44,11 +44,49 @@ export function SessionDialog({
 
   // Pre-fill form when session changes (edit mode)
   useEffect(() => {
+    const formatTimeForInput = (timeStr: string) => {
+      if (!timeStr) return '';
+      // If it matches HH:mm or HH:mm:ss, it's already in a valid format for time input
+      if (/^\d{2}:\d{2}(:\d{2})?$/.test(timeStr)) return timeStr.substring(0, 5);
+      
+      try {
+        // Try to parse as a full date or time string
+        // If it's just "10:00 PM", we prepend a dummy date for parsing
+        const dateObj = new Date(timeStr.includes(':') && !timeStr.includes('-') ? `2000-01-01 ${timeStr}` : timeStr);
+        if (!isNaN(dateObj.getTime())) {
+          return dateObj.getHours().toString().padStart(2, '0') + ':' + 
+                 dateObj.getMinutes().toString().padStart(2, '0');
+        }
+      } catch (e) {
+        console.error("Failed to parse time:", timeStr);
+      }
+      return '';
+    };
+
+    const formatDateForInput = (dateStr: string) => {
+      if (!dateStr) return '';
+      // If it matches YYYY-MM-DD, return as is
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+      
+      try {
+        const dateObj = new Date(dateStr);
+        if (!isNaN(dateObj.getTime())) {
+          const year = dateObj.getFullYear();
+          const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+          const day = dateObj.getDate().toString().padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+      } catch (e) {
+        console.error("Failed to parse date:", dateStr);
+      }
+      return '';
+    };
+
     if (session) {
       setTitle(session.title);
-      setDate(session.date);
-      setStartTime(session.start_time);
-      setEndTime(session.end_time);
+      setDate(formatDateForInput(session.date));
+      setStartTime(formatTimeForInput(session.start_time));
+      setEndTime(formatTimeForInput(session.end_time));
       setLocation(session.location);
       setType(session.type || 'offline');
       setNote(session.note || '');

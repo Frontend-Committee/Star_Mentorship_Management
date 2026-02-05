@@ -81,7 +81,14 @@ export function SessionDetailsDialog({ open, onOpenChange, session, onEdit, onDe
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-primary" />
-              <span className="font-medium">{session.date}</span>
+              <span className="font-medium">
+                {(() => {
+                  const d = new Date(session.date);
+                  return !isNaN(d.getTime()) 
+                    ? d.toLocaleDateString(undefined, { dateStyle: 'long' })
+                    : session.date || 'No Date';
+                })()}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />

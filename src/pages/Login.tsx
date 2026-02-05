@@ -64,8 +64,8 @@ export default function Login() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.2),transparent_50%)]" />
         
         <div className="relative z-10 text-center space-y-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-32 h-32 rounded-2xl bg-white/10 backdrop-blur-sm shadow-glow">
-            <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-35 h-35 object-contain" />
+          <div className="inline-flex items-center justify-center w-32 h-32 rounded-2xl bg-white/10 dark:bg-white/90 backdrop-blur-sm shadow-glow">
+            <img src="/MentorshipWebsiteIcon.svg" alt="STAR Logo" className="w-35 h-35 object-contain" />
           </div>
           
           <div className="space-y-4">
@@ -104,8 +104,8 @@ export default function Login() {
         <div className="w-full max-w-md space-y-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           {/* Mobile Logo */}
           <div className="lg:hidden text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-white/10 backdrop-blur-sm shadow-glow">
-              <img src="/logo-removebg-preview.png" alt="STAR Logo" className="w-14 h-14 object-contain" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-white/10 dark:bg-white/90 backdrop-blur-sm shadow-glow">
+              <img src="/MentorshipWebsiteIcon.svg" alt="STAR Logo" className="w-14 h-14 object-contain" />
             </div>
             <h1 className="text-2xl font-heading font-bold">STAR Mentorship</h1>
           </div>

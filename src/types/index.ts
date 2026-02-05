@@ -26,6 +26,7 @@ export interface Committee {
   description?: string;
   id?: number;
   name: string;
+  reference_id?: string | null;
   [property: string]: unknown;
 }
 

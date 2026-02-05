@@ -13,6 +13,7 @@ import {
   useMemberSessions,
   useUpdateSession
 } from '@/features/sessions/hooks';
+import { useCommitteeDetails } from '@/features/committees/hooks';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Session, SessionCreatePayload } from '@/types';
@@ -35,9 +36,12 @@ export default function Attendance() {
   const isAdmin = user?.role === 'admin';
   const { toast } = useToast();
 
+  const { data: committee } = useCommitteeDetails();
+  const referenceId = committee?.reference_id;
+
   const { data: adminSessions, isLoading: isAdminLoading } = useAdminSessions({ enabled: isAdmin });
   const { data: memberSessions, isLoading: isMemberLoading } = useMemberSessions({ enabled: !isAdmin && !!user });
-  const { data: memberAttendance } = useMemberAttendance({ enabled: !isAdmin && !!user });
+  const { data: memberAttendance } = useMemberAttendance(referenceId, { enabled: !isAdmin && !!user });
 
   const sessions = (isAdmin ? adminSessions : memberSessions) || [];
   const isLoading = isAdmin ? isAdminLoading : isMemberLoading;
@@ -126,16 +130,10 @@ export default function Attendance() {
           </h1>
           <p className="text-muted-foreground mt-1">
             {isAdmin
-              ? "Manage sessions and track committee attendance."
+              ? "Overview of committee sessions and attendance."
               : "View your attendance record and upcoming sessions."}
           </p>
         </div>
-        {isAdmin && (
-          <Button onClick={handleCreateSession} className="gap-2 shadow-lg hover:shadow-xl transition-all">
-            <Plus className="w-4 h-4" />
-            Add Session
-          </Button>
-        )}
       </div>
 
       {isLoading ? (
@@ -148,19 +146,32 @@ export default function Attendance() {
             <CalendarDays className="w-12 h-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold">No Sessions Found</h3>
             <p className="text-muted-foreground max-w-sm mt-2">
-              {isAdmin ? "Get started by creating a new session for your committee." : "There are no sessions scheduled yet."}
+              There are no sessions scheduled yet.
             </p>
-            {isAdmin && (
-              <Button onClick={handleCreateSession} className="mt-4 gap-2">
-                <Plus className="w-4 h-4" />
-                Create First Session
-              </Button>
-            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {sessions.map((session) => {
+          {[...sessions]
+            .sort((a, b) => {
+              // Helper to get a comparable value for date
+              const getDateVal = (s: Session) => {
+                 if (s.date) return new Date(s.date).getTime();
+                 if (s.start_time && (s.start_time.includes('-') || s.start_time.includes('/'))) return new Date(s.start_time).getTime();
+                 return 0; 
+              };
+              return getDateVal(a) - getDateVal(b);
+            })
+            .map((session, index) => {
+            // Safe date parsing helper
+            const parseDate = (dateStr: string) => {
+              const d = new Date(dateStr);
+              if (!isNaN(d.getTime())) return d;
+              // Fallback for some common but non-standard formats if needed
+              return null;
+            };
+            const sessionDate = parseDate(session.date);
+
             // For members, find their status (prioritize memberAttendance endpoint, fallback to session.attendance)
             const memberRecord = !isAdmin
               ? (memberAttendance?.find(a => a.session === session.id) || (session.attendance?.length ? session.attendance[0] : null))
@@ -171,14 +182,16 @@ export default function Attendance() {
                 key={session.id}
                 className={cn(
                   "hover:shadow-md transition-all duration-200 border-l-4",
-                  isAdmin ? "cursor-pointer active:scale-95 border-l-primary" : "border-l-primary/50"
+                  "border-l-primary/50"
                 )}
-                onClick={() => isAdmin && setSelectedSession(session)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start gap-2">
-                    <CardTitle className="text-lg font-bold line-clamp-1" title={session.title}>
-                      {session.title}
+                    <CardTitle className="text-lg font-bold" title={session.title}>
+                      <span className="text-primary mr-2">#{index + 1}</span>
+                      <span>
+                         {session.title || (session as any).name || 'Untitled Session'}
+                      </span>
                     </CardTitle>
                     {!isAdmin && memberRecord && (
                       <Badge
@@ -195,21 +208,21 @@ export default function Attendance() {
                     <div className="flex items-center gap-1.5">
                       <CalendarCheck className="w-4 h-4" />
                       <span>
-                        {new Date(session.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {(() => {
+                           // Try session.date first
+                           let d = parseDate(session.date);
+                           // If failed, try extracting from start_time
+                           if (!d && session.start_time) {
+                             // Assuming start_time might be "YYYY-MM-DD HH:MM..." or similar
+                             d = parseDate(session.start_time.split(' ').slice(0, 1).join(' ')); // naive try
+                             if (!d) d = parseDate(session.start_time); // try full string
+                           }
+                           
+                           return d 
+                             ? d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+                             : (session.date || 'No Date');
+                        })()}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {session.type === 'online' ? (
-                        <>
-                          <Globe className="w-3.5 h-3.5 text-blue-500" />
-                          <span className="text-blue-600 dark:text-blue-400 font-medium">Online</span>
-                        </>
-                      ) : (
-                        <>
-                          <UsersIcon className="w-3.5 h-3.5 text-orange-500" />
-                          <span className="text-orange-600 dark:text-orange-400 font-medium">Offline</span>
-                        </>
-                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -217,7 +230,23 @@ export default function Attendance() {
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="w-4 h-4 shrink-0" />
-                      <span>{session.start_time} - {session.end_time}</span>
+                      <span>
+                        {/* Format times to just HH:MM AM/PM if they are full dates */}
+                        {(() => {
+                          const formatTime = (t: string) => {
+                             if (!t) return '??:??';
+                             // If it looks like a time only (HH:MM or HH:MM:SS or HH:MM AM/PM)
+                             if (/^\d{1,2}:\d{2}/.test(t) && t.length < 12) return t; 
+                             
+                             const d = new Date(t.includes(' ') && !t.includes('-') && !t.includes('/') ? `2000-01-01 ${t}` : t);
+                             if (!isNaN(d.getTime())) {
+                               return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                             }
+                             return t;
+                          };
+                          return `${formatTime(session.start_time)} - ${formatTime(session.end_time)}`;
+                        })()}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin className="w-4 h-4 shrink-0" />
@@ -227,22 +256,6 @@ export default function Attendance() {
                       <p className="text-muted-foreground/80 text-xs mt-2 line-clamp-2 bg-muted/50 p-2 rounded">
                         {session.note}
                       </p>
-                    )}
-
-                    {isAdmin && (
-                      <div className="pt-2 mt-2 border-t flex justify-between items-center text-xs font-medium">
-                        <span className="text-muted-foreground">Attendance</span>
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="w-3 h-3" />
-                            {(session.attendance || []).filter(a => a.status).length}
-                          </span>
-                          <span className="flex items-center gap-1 text-red-500">
-                            <XCircle className="w-3 h-3" />
-                            {(session.attendance || []).filter(a => !a.status).length}
-                          </span>
-                        </div>
-                      </div>
                     )}
                   </div>
                 </CardContent>

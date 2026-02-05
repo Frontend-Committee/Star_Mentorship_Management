@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useMemo, useRef } from 'react';
 import { useMemberAttendance } from '@/features/sessions/hooks';
 import { useWeeks } from '@/features/weeks/hooks';
+import { useCommitteeDetails } from '@/features/committees/hooks';
 import { ProfileSkeleton } from '@/components/profile/ProfileSkeleton';
 
 export default function Profile() {
@@ -20,7 +21,10 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = user?.role === 'admin';
-  const { data: memberAttendance = [], isLoading: isLoadingAtt } = useMemberAttendance({ enabled: !isAdmin });
+  const { data: committee } = useCommitteeDetails();
+  const referenceId = committee?.reference_id;
+  
+  const { data: memberAttendance = [], isLoading: isLoadingAtt } = useMemberAttendance(referenceId, { enabled: !isAdmin });
   const { data: apiWeeks = [], isLoading: isLoadingWeeks } = useWeeks(user?.role);
 
   const fullName = user ? `${user.first_name} ${user.last_name}` : '';

@@ -2,15 +2,27 @@ import api from '@/lib/api';
 import { Committee, CommitteeCreatePayload } from '@/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-export const useCommitteeDetails = (id?: number | null) => {
+export const useCommitteeDetails = () => {
   return useQuery({
-    queryKey: ['committee', id],
+    queryKey: ['committee'],
     queryFn: async () => {
-      if (!id) return null;
-      const response = await api.get<Committee>(`committees/${id}/`);
+      const response = await api.get<Committee>('committee/');
       return response.data;
     },
-    enabled: !!id,
+  });
+};
+
+export const useUpdateCommittee = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (payload: Partial<CommitteeCreatePayload>) => {
+      const response = await api.patch<Committee>('committee/', payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['committee'] });
+    },
   });
 };
 
