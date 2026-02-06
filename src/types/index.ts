@@ -339,7 +339,7 @@ export interface WeekItemCreatePayload {
   notes?: string | null;
   resource?: string | null;
   title: string;
-  users: { user: number }[]; // Required by backend
+  users: number[]; // Array of User IDs
   week: number; // Week ID
 }
 

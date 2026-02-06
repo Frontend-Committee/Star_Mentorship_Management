@@ -106,7 +106,7 @@ export function EditWeekItemDialog({
         title: title.trim(),
         resource: resource.trim() || '',
         notes: notes.trim() || '',
-        users: selectedUsers.map(id => ({ user: id })),
+        users: selectedUsers,
       };
       
       console.log('[EditWeekItemDialog] Updating item with payload:', JSON.stringify(payload, null, 2)); // Added console.log
@@ -140,21 +140,24 @@ export function EditWeekItemDialog({
           } else if (typeof data === 'object' && data !== null) {
             const errorObj = data as Record<string, unknown>;
             
+            // Helper to stringify complex error values
+            const formatErrorValue = (val: unknown): string => {
+              if (Array.isArray(val)) {
+                return val.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v)).join(', ');
+              }
+              if (typeof val === 'object' && val !== null) {
+                return JSON.stringify(val);
+              }
+              return String(val);
+            };
+
             if (typeof errorObj.detail === 'string') errorMessage = errorObj.detail;
             else if (typeof errorObj.error === 'string') errorMessage = errorObj.error;
-            else if (errorObj.users && Array.isArray(errorObj.users)) { // Specific error parsing
-              errorMessage = `Members: ${String(errorObj.users[0])}`;
-            } else if (errorObj.week) { // Specific error parsing
-              errorMessage = `Week: ${String(Array.isArray(errorObj.week) ? errorObj.week[0] : errorObj.week)}`;
-            } else if (errorObj.title) { // Specific error parsing
-              errorMessage = `Title: ${String(Array.isArray(errorObj.title) ? errorObj.title[0] : errorObj.title)}`;
-            } else {
+            else {
               // Show first validation error
               const firstKey = Object.keys(errorObj)[0];
-              if (firstKey && Array.isArray(errorObj[firstKey])) {
-                errorMessage = `${firstKey}: ${String((errorObj[firstKey] as unknown[])[0])}`;
-              } else if (firstKey) {
-                errorMessage = `${firstKey}: ${String(errorObj[firstKey])}`;
+              if (firstKey) {
+                errorMessage = `${firstKey}: ${formatErrorValue(errorObj[firstKey])}`;
               }
             }
           }

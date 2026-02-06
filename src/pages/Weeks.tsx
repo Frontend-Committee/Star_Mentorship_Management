@@ -111,7 +111,7 @@ export default function Weeks() {
       };
     });
 
-    const sorted = processed.sort((a, b) => b.weekNumber - a.weekNumber);
+    const sorted = processed.sort((a, b) => a.weekNumber - b.weekNumber);
     console.log('Processed Weeks Data:', sorted);
     return sorted;
   }, [apiWeeks, user?.id]);
