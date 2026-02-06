@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const attendanceApi = axios.create({
-  baseURL: '/api-sessions',
+  baseURL: 'https://attendanceapp.pythonanywhere.com/api',
   headers: {
     'Content-Type': 'application/json',
   },

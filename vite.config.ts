@@ -10,12 +10,6 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     strictPort: true,
     proxy: {
-      "/api-sessions": {
-        target: "https://attendanceapp.pythonanywhere.com/api",
-        changeOrigin: true,
-        secure: true,
-        rewrite: (path) => path.replace(/^\/api-sessions/, ""),
-      },
       "/api": {
         target: "https://starunion.pythonanywhere.com",
         changeOrigin: true,
