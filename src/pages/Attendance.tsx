@@ -38,6 +38,13 @@ export default function Sessions() {
   const { data: memberSessions, isLoading: isMemberLoading } = useMemberSessions({ enabled: !isAdmin && !!user });
   
   const sessions = (isAdmin ? adminSessions : memberSessions) || [];
+  
+  // DEBUGGING: Log session data structure
+  console.log('DEBUG: Attendance Page - sessions:', sessions);
+  if (sessions.length > 0) {
+    console.log('DEBUG: First Session Keys:', Object.keys(sessions[0]));
+    console.log('DEBUG: First Session Data:', sessions[0]);
+  }
   const isLoading = isAdmin ? isAdminLoading : isMemberLoading;
 
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
