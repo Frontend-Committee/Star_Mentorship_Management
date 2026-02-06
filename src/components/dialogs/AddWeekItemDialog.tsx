@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox'; // Assuming you have this or standard input
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useCreateWeekItem } from '@/features/weeks/hooks';
 import { useCommitteeMembers } from '@/features/members/hooks';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 
 interface AddWeekItemDialogProps {
   open: boolean;
@@ -34,9 +34,23 @@ export function AddWeekItemDialog({
   const [resource, setResource] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const createItem = useCreateWeekItem();
   const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
+
+  // Filter members based on search query
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!searchQuery.trim()) return users;
+    
+    const query = searchQuery.toLowerCase();
+    return users.filter(user => {
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      return fullName.includes(query) || email.includes(query);
+    });
+  }, [users, searchQuery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +74,8 @@ export function AddWeekItemDialog({
         users: selectedUsers.map(id => ({ user: id })),
       };
       
+      console.log('[AddWeekItemDialog] Submitting payload:', JSON.stringify(payload, null, 2));
+      
       await createItem.mutateAsync(payload);
 
       // Reset form
@@ -67,9 +83,13 @@ export function AddWeekItemDialog({
       setResource('');
       setNotes('');
       setSelectedUsers([]);
+      setSearchQuery('');
       onOpenChange(false);
       toast.success('Item added successfully');
     } catch (error) {
+      // Log the full error for debugging
+      console.error('[AddWeekItemDialog] Error creating item:', error);
+      
       // Extract detailed error message from backend
       let errorMessage = 'Failed to add item';
       
@@ -78,15 +98,11 @@ export function AddWeekItemDialog({
         const status = axiosError.response?.status;
         const data = axiosError.response?.data;
 
+        console.error('[AddWeekItemDialog] Response status:', status);
+        console.error('[AddWeekItemDialog] Response data:', data);
+
         if (status === 500) {
-          // Check for the specific AttributeError bug in the backend response
-          if (typeof data === 'string' && data.includes('AttributeError') && data.includes('users')) {
-            errorMessage = 'Item created, but the server had an error displaying it. Please refresh.';
-            // Since it likely succeeded, we can treat it as a partial success
-            toast.success(errorMessage);
-            onOpenChange(false);
-            return;
-          }
+          errorMessage = 'Server error occurred. Please check the console for details and contact support.';
         }
         
         if (data) {
@@ -100,11 +116,17 @@ export function AddWeekItemDialog({
             else if (typeof errorObj.error === 'string') errorMessage = errorObj.error;
             else if (errorObj.users && Array.isArray(errorObj.users)) {
               errorMessage = `Members: ${String(errorObj.users[0])}`;
+            } else if (errorObj.week) {
+              errorMessage = `Week: ${String(Array.isArray(errorObj.week) ? errorObj.week[0] : errorObj.week)}`;
+            } else if (errorObj.title) {
+              errorMessage = `Title: ${String(Array.isArray(errorObj.title) ? errorObj.title[0] : errorObj.title)}`;
             } else {
               // Show first validation error
               const firstKey = Object.keys(errorObj)[0];
               if (firstKey && Array.isArray(errorObj[firstKey])) {
                 errorMessage = `${firstKey}: ${String((errorObj[firstKey] as unknown[])[0])}`;
+              } else if (firstKey) {
+                errorMessage = `${firstKey}: ${String(errorObj[firstKey])}`;
               }
             }
           }
@@ -125,25 +147,26 @@ export function AddWeekItemDialog({
 
   const selectAll = () => {
     if (users) {
-      setSelectedUsers(users.map(u => u.id));
+      const validUserIds = users.map(u => u.id).filter((id): id is number => id !== undefined);
+      setSelectedUsers(validUserIds);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="font-heading">Add Item to {weekTitle}</DialogTitle>
+          <DialogTitle className="font-heading text-xl">Add Item to {weekTitle}</DialogTitle>
           <DialogDescription>
             Add a new resource or task to this week.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto flex-1 px-1">
           <div className="space-y-2">
             <Label htmlFor="item-title">Title *</Label>
             <Input
               id="item-title"
-              placeholder="e.g., Week Slides"
+              placeholder="e.g., Week Content"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -167,56 +190,87 @@ export function AddWeekItemDialog({
               placeholder="Additional instructions..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={2}
+              rows={3}
+              className="resize-none"
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Assign Members ({selectedUsers.length})</Label>
-              <Button type="button" variant="ghost" size="sm" onClick={selectAll} className="h-auto p-0 text-xs">
+              <Label className="text-base">Assign Members ({selectedUsers.length})</Label>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                onClick={selectAll} 
+                className="h-auto py-1 px-2 text-xs hover:bg-primary/10"
+              >
                 Select All
               </Button>
             </div>
             
-            <div className="border border-border/50 rounded-lg bg-secondary/10 overflow-hidden flex flex-col h-48">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search members..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            
+            <div className="border border-border/50 rounded-lg bg-secondary/10 overflow-hidden flex flex-col h-56">
               {isLoadingUsers ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                 </div>
-              ) : users?.length === 0 ? (
+              ) : filteredUsers.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-sm">
-                  No members found
+                  {searchQuery ? 'No members found matching your search' : 'No members found'}
                 </div>
               ) : (
-                <div className="overflow-y-auto p-2 space-y-1">
-                  {users?.map(user => (
-                    <div 
-                      key={user.id} 
-                      className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors"
-                    >
-                      <Checkbox
-                        id={`user-${user.id}`}
-                        checked={selectedUsers.includes(user.id)}
-                        onCheckedChange={() => toggleUser(user.id)}
-                      />
-                      <Label 
-                        htmlFor={`user-${user.id}`} 
-                        className="text-sm font-medium leading-none cursor-pointer flex-1 py-1"
+                <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                  {filteredUsers.map(user => {
+                    if (!user.id) return null;
+                    const isSelected = selectedUsers.includes(user.id);
+                    
+                    return (
+                      <div 
+                        key={user.id} 
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer ${
+                          isSelected 
+                            ? 'bg-primary/10 border border-primary/30' 
+                            : 'hover:bg-white/5 border border-transparent'
+                        }`}
+                        onClick={() => toggleUser(user.id!)}
                       >
-                        {user.first_name} {user.last_name} 
-                        <span className="ml-1.5 text-xs text-muted-foreground font-normal">
-                          {user.email}
-                        </span>
-                      </Label>
-                    </div>
-                  ))}
+                        <Checkbox
+                          id={`user-${user.id}`}
+                          checked={isSelected}
+                          onCheckedChange={() => toggleUser(user.id!)}
+                          className="pointer-events-none"
+                        />
+                        <Label 
+                          htmlFor={`user-${user.id}`} 
+                          className="text-sm font-medium leading-none cursor-pointer flex-1 py-1"
+                        >
+                          <div className="flex flex-col gap-0.5">
+                            <span>{user.first_name} {user.last_name}</span>
+                            <span className="text-xs text-muted-foreground font-normal">
+                              {user.email}
+                            </span>
+                          </div>
+                        </Label>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button 
               type="button" 
               variant="outline" 
@@ -230,7 +284,14 @@ export function AddWeekItemDialog({
               variant="gradient"
               disabled={createItem.isPending}
             >
-              {createItem.isPending ? 'Adding...' : 'Add Item'}
+              {createItem.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Item'
+              )}
             </Button>
           </DialogFooter>
         </form>
