@@ -56,28 +56,26 @@ export function EditWeekItemDialog({
   // Load item data into form
   useEffect(() => {
     if (item && open) {
-      console.log('[EditWeekItemDialog] Item data loaded:', item);
-      setTitle(item.title || '');
-      setResource(item.resource || '');
-      setNotes(item.notes || '');
+      setTitle(t => t === (item.title || '') ? t : (item.title || ''));
+      setResource(r => r === (item.resource || '') ? r : (item.resource || ''));
+      setNotes(n => n === (item.notes || '') ? n : (item.notes || ''));
       
+      let userIds: number[] = [];
       // Try to extract user IDs from 'users' array first, then fallback to 'week_progress'
       if (item.users && Array.isArray(item.users) && item.users.length > 0) {
-        const userIds = item.users.map(u => u.user);
-        console.log('[EditWeekItemDialog] Setting selected users from users array:', userIds);
-        setSelectedUsers(userIds);
+        userIds = item.users.map(u => u.user);
       } else if (item.week_progress && Array.isArray(item.week_progress) && item.week_progress.length > 0) {
         // Fallback: extract user IDs from week_progress
-        const userIds = item.week_progress
+        userIds = item.week_progress
           .map(p => p.user?.id)
           .filter((id): id is number => id !== undefined);
-        
-        console.log('[EditWeekItemDialog] Setting selected users from week_progress:', userIds);
-        setSelectedUsers(userIds);
-      } else {
-        console.log('[EditWeekItemDialog] No users found in item data (checked both users and week_progress)');
-        setSelectedUsers([]);
       }
+
+      // Only set if content actually changes to avoid re-renders
+      setSelectedUsers(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(userIds)) return prev;
+        return userIds;
+      });
     }
   }, [item, open]);
 
@@ -106,8 +104,8 @@ export function EditWeekItemDialog({
       const payload: import('@/types').WeekItemCreatePayload = { // Changed payload type
         week: parentWeekId,
         title: title.trim(),
-        resource: resource.trim() || null,
-        notes: notes.trim() || null,
+        resource: resource.trim() || '',
+        notes: notes.trim() || '',
         users: selectedUsers.map(id => ({ user: id })),
       };
       
@@ -270,25 +268,24 @@ export function EditWeekItemDialog({
                     {filteredUsers.map(user => {
                       if (!user.id) return null;
                       const isSelected = selectedUsers.includes(user.id);
+                      const checkboxId = `edit-item-user-${user.id}`;
                       
                       return (
                         <div 
                           key={user.id} 
-                          className={`flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer ${
+                          className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
                             isSelected 
                               ? 'bg-primary/10 border border-primary/30' 
                               : 'hover:bg-white/5 border border-transparent'
                           }`}
-                          onClick={() => toggleUser(user.id!)}
                         >
                           <Checkbox
-                            id={`edit-user-${user.id}`}
+                            id={checkboxId}
                             checked={isSelected}
                             onCheckedChange={() => toggleUser(user.id!)}
-                            className="pointer-events-none"
                           />
                           <Label 
-                            htmlFor={`edit-user-${user.id}`} 
+                            htmlFor={checkboxId} 
                             className="text-sm font-medium leading-none cursor-pointer flex-1 py-1"
                           >
                             <div className="flex flex-col gap-0.5">

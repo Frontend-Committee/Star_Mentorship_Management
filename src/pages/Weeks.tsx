@@ -77,12 +77,15 @@ export default function Weeks() {
       });
       
       const weekNumber = (week as { number?: number }).number || 0;
-      
+      const weekData = week as Record<string, unknown>;
+      const description = (weekData.description as string) || (items.length > 0 ? (items[0] as { notes?: string }).notes : '') || '';
+      const cleanDescription = description === '--' ? '' : description.trim();
+
       return {
         id: week.id?.toString() ?? `week-${weekNumber}`,
         weekNumber: weekNumber,
         title: week.title,
-        description: (items.length > 0) ? (items[0] as { notes?: string }).notes || '' : '', 
+        description: cleanDescription,
         isCompleted,
         items: items,
         notes: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('note'))?.resource,
@@ -213,47 +216,49 @@ export default function Weeks() {
               >
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value={week.id} className="border-0">
-                    <AccordionTrigger className="px-4 sm:px-6 py-4 hover:no-underline hover:bg-muted/30">
-                      <div className="flex items-center gap-3 sm:gap-4 text-left flex-1 min-w-0">
-                        <div className={`p-2 rounded-lg shrink-0 ${
+                    <AccordionTrigger className="px-4 sm:px-6 py-6 hover:no-underline hover:bg-muted/30 group transition-all">
+                      <div className="flex items-center gap-4 sm:gap-6 text-left flex-1 min-w-0">
+                        <div className={`p-3 rounded-xl shrink-0 shadow-sm transition-transform group-hover:scale-110 ${
                           week.isCompleted 
-                            ? 'bg-green-100 dark:bg-green-900/30' 
+                            ? 'bg-green-500/10 text-green-500' 
                             : isLocked 
-                              ? 'bg-muted' 
-                              : 'bg-primary/10'
+                              ? 'bg-muted text-muted-foreground' 
+                              : 'bg-primary/10 text-primary'
                         }`}>
                           {week.isCompleted ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            <CheckCircle2 className="w-6 h-6" />
                           ) : isLocked ? (
-                            <Lock className="w-5 h-5 text-muted-foreground" />
+                            <Lock className="w-6 h-6" />
                           ) : (
-                            <Circle className="w-5 h-5 text-primary" />
+                            <Circle className="w-6 h-6" />
                           )}
                         </div>
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge
                               variant={week.isCompleted ? 'default' : 'secondary'}
-                              className="text-xs"
+                              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0 h-5 ${
+                                week.isCompleted ? 'bg-green-500 hover:bg-green-600' : ''
+                              }`}
                             >
                               Week {week.weekNumber}
                             </Badge>
                             {week.assignmentSubmitted && !isAdmin && (
-                              <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0 h-5 text-green-600 border-green-500/30 bg-green-500/5">
                                 Submitted
                               </Badge>
                             )}
                           </div>
-                          <h3 className="font-semibold text-foreground mt-1 text-sm sm:text-base truncate">
+                          <h3 className="font-heading font-bold text-foreground text-base sm:text-xl truncate leading-tight">
                             {week.title}
                           </h3>
                         </div>
                         {isAdmin && (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2 pr-2">
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                              className="h-9 w-9 rounded-full bg-background/50 border border-border/50 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const id = parseInt(week.id.toString().replace('week-', ''));
@@ -261,12 +266,12 @@ export default function Weeks() {
                               }}
                               title="Edit week details"
                             >
-                              <Pencil className="w-3.5 h-3.5" />
+                              <Pencil className="w-4 h-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2"
+                              className="h-9 w-9 rounded-full bg-background/50 border border-border/50 text-destructive/70 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-all"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const id = parseInt(week.id.toString().replace('week-', ''));
@@ -305,57 +310,82 @@ export default function Weeks() {
                               Resources & Tasks
                             </p>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                               {(week.items || []).map((item) => {
                                 const isSlide = item.title?.toLowerCase().includes('slide');
                                 const isQuiz = item.title?.toLowerCase().includes('quiz') || item.title?.toLowerCase().includes('form');
                                 const isNote = item.title?.toLowerCase().includes('note');
                                 
                                 return (
-                                  <div key={item.id} className="group relative bg-card hover:bg-muted/50 border border-border/50 rounded-xl p-3 flex items-center justify-between transition-all duration-200 shadow-sm hover:shadow-md">
-                                    <div className="flex items-center gap-3 overflow-hidden">
-                                       <div className={`p-2 rounded-lg ${isSlide ? 'bg-orange-100 text-orange-600' : isQuiz ? 'bg-purple-100 text-purple-600' : isNote ? 'bg-blue-100 text-blue-600' : 'bg-primary/10 text-primary'}`}>
-                                         {isSlide ? <Presentation className="w-4 h-4" /> : isQuiz ? <ClipboardList className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                                  <div key={item.id} className="group relative glass bg-card/30 hover:bg-card/50 rounded-2xl p-4 flex flex-col transition-all duration-300 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5">
+                                    <div className="flex items-start gap-4 min-w-0 flex-1">
+                                       <div className={`p-3 rounded-xl shrink-0 shadow-inner group-hover:scale-110 transition-transform ${
+                                         isSlide ? 'bg-orange-500/15 text-orange-500' : 
+                                         isQuiz ? 'bg-purple-500/15 text-purple-500' : 
+                                         isNote ? 'bg-blue-500/15 text-blue-500' : 
+                                         'bg-primary/15 text-primary'
+                                       }`}>
+                                         {isSlide ? <Presentation className="w-5 h-5" /> : 
+                                          isQuiz ? <ClipboardList className="w-5 h-5" /> : 
+                                          <FileText className="w-5 h-5" />}
                                        </div>
-                                       <div className="min-w-0">
-                                         <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{item.title}</p>
-                                         <p className="text-[10px] text-muted-foreground uppercase">{isSlide ? 'Slideshow' : isQuiz ? 'Activity' : isNote ? 'Documentation' : 'Resource'}</p>
+                                       <div className="min-w-0 flex-1 pr-2">
+                                         <p className="text-sm sm:text-base font-bold text-foreground leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                                           {item.title}
+                                         </p>
+                                         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mt-1">
+                                           {isSlide ? 'Slideshow' : isQuiz ? 'Activity' : isNote ? 'Documentation' : 'Resource'}
+                                         </p>
                                        </div>
                                     </div>
-
-                                    <div className="flex items-center gap-1">
-                                      {(Array.isArray(item.week_progress) && item.week_progress.some(p => p.is_finished && (!user?.id || p.user?.id === user.id))) && !isAdmin && (
-                                        <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[10px] h-6 px-2">
-                                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                                          Finished
-                                        </Badge>
-                                      )}
+                                    
+                                    <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
 
                                       {isAdmin && (
-                                        <div className="flex items-center gap-2 mr-2">
+                                        <div className="flex items-center">
                                           {Array.isArray(item.week_progress) && item.week_progress.length > 0 ? (
-                                             <Badge 
-                                               variant="outline" 
-                                               className="text-[10px] h-6 border-primary/20 bg-primary/5 text-primary cursor-pointer hover:bg-primary/10 transition-colors"
+                                             <div 
+                                               className="flex items-center h-7 px-2.5 rounded-full bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all cursor-pointer shadow-sm group/progress"
                                                onClick={(e) => {
                                                  e.stopPropagation();
                                                  setViewItemId(item.id!);
                                                }}
                                              >
-                                               {item.week_progress.filter((p: WeekProgress) => p.is_finished).length} / {item.week_progress.length} Done
-                                             </Badge>
+                                               <div className="flex items-center gap-2">
+                                                  <div className="relative w-1.5 h-1.5 rounded-full bg-primary/20 overflow-hidden shrink-0">
+                                                     <div 
+                                                       className="absolute top-0 left-0 h-full bg-primary transition-all duration-500" 
+                                                       style={{ width: `${(item.week_progress.filter((p: WeekProgress) => p.is_finished).length / item.week_progress.length) * 100}%` }}
+                                                     />
+                                                  </div>
+                                                  <span className="text-[10px] font-bold text-primary whitespace-nowrap">
+                                                    {item.week_progress.filter((p: WeekProgress) => p.is_finished).length} <span className="text-primary/30 mx-0.5">/</span> {item.week_progress.length}
+                                                    <span className="ml-1 text-[8px] uppercase opacity-60 group-hover/progress:opacity-100 transition-opacity">Done</span>
+                                                  </span>
+                                               </div>
+                                             </div>
                                           ) : (
-                                            <Badge variant="outline" className="text-[10px] h-6 text-muted-foreground italic">
-                                              No tracking
+                                            <Badge variant="outline" className="text-[9px] h-6 text-muted-foreground/50 border-muted-foreground/10 italic font-medium px-2">
+                                              Not Assigned
                                             </Badge>
                                           )}
                                         </div>
                                       )}
+                                      
+                                      {!isAdmin && (Array.isArray(item.week_progress) && item.week_progress.some(p => p.is_finished && (!user?.id || p.user?.id === user.id))) && (
+                                        <Badge variant="secondary" className="bg-green-500/10 text-green-500 hover:bg-green-500/15 border border-green-500/20 text-[9px] font-bold uppercase tracking-wider h-7 px-2">
+                                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                                          Finished
+                                        </Badge>
+                                      )}
+                                      </div>
 
+                                    <div className="flex items-center gap-1.5 shrink-0">
                                       {item.resource && (
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary" asChild title="View external resource">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-background/40 border border-border/40 hover:bg-primary/10 hover:text-primary hover:border-primary/20 shadow-sm" asChild title="View external resource">
                                           <a href={item.resource} target="_blank" rel="noopener noreferrer">
-                                            <ExternalLink className="w-4 h-4" />
+                                            <ExternalLink className="w-3.5 h-3.5" />
                                           </a>
                                         </Button>
                                       )}
@@ -365,7 +395,7 @@ export default function Weeks() {
                                           <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                                            className="h-8 w-8 rounded-lg bg-background/40 border border-border/40 hover:bg-primary/10 hover:text-primary hover:border-primary/20 shadow-sm"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               if (item.id !== undefined) {
@@ -381,7 +411,7 @@ export default function Weeks() {
                                           <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                            className="h-8 w-8 rounded-lg bg-background/40 border border-border/40 text-destructive/70 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 shadow-sm"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               if (item.id !== undefined) setDeleteItemId(item.id);
@@ -394,6 +424,7 @@ export default function Weeks() {
                                       )}
                                     </div>
                                   </div>
+                                </div>
                                 );
                               })}
                               

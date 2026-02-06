@@ -69,8 +69,8 @@ export function AddWeekItemDialog({
       const payload: import('@/types').WeekItemCreatePayload = {
         week: weekId,
         title: title.trim(),
-        resource: resource.trim() || null,
-        notes: notes.trim() || null,
+        resource: resource.trim() || '',
+        notes: notes.trim() || '',
         users: selectedUsers.map(id => ({ user: id })),
       };
       
@@ -234,25 +234,24 @@ export function AddWeekItemDialog({
                   {filteredUsers.map(user => {
                     if (!user.id) return null;
                     const isSelected = selectedUsers.includes(user.id);
+                    const checkboxId = `add-item-user-${user.id}`;
                     
                     return (
                       <div 
                         key={user.id} 
-                        className={`flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer ${
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
                           isSelected 
                             ? 'bg-primary/10 border border-primary/30' 
                             : 'hover:bg-white/5 border border-transparent'
                         }`}
-                        onClick={() => toggleUser(user.id!)}
                       >
                         <Checkbox
-                          id={`user-${user.id}`}
+                          id={checkboxId}
                           checked={isSelected}
                           onCheckedChange={() => toggleUser(user.id!)}
-                          className="pointer-events-none"
                         />
                         <Label 
-                          htmlFor={`user-${user.id}`} 
+                          htmlFor={checkboxId} 
                           className="text-sm font-medium leading-none cursor-pointer flex-1 py-1"
                         >
                           <div className="flex flex-col gap-0.5">

@@ -52,50 +52,34 @@ export function TaskDialog({
   }, [users, searchQuery]);
 
   useEffect(() => {
-    if (task && open) {
-      console.log('[TaskDialog] Task data loaded:', task);
+    if (open && task) {
       setTitle(task.title || '');
       setDescription(task.description || '');
-      // Ensure date is in YYYY-MM-DD format for the input
       if (task.date) {
         setDate(task.date.split('T')[0]);
       }
       
-      // Try multiple ways to find assigned users
       let userIds: number[] = [];
-      
-      // 1. Check assigned_to if it's an array of numbers
-      if (task.assigned_to && Array.isArray(task.assigned_to) && task.assigned_to.length > 0) {
+      if (task.assigned_to && Array.isArray(task.assigned_to)) {
         userIds = task.assigned_to;
-        console.log('[TaskDialog] Found users in assigned_to:', userIds);
-      } 
-      // 2. Check a possible 'users' property (consistent with some other models)
-      else if ('users' in task && Array.isArray((task as { users?: unknown }).users)) {
-        const potentialUsers = (task as { users: any[] }).users;
+      } else if ('users' in task && Array.isArray((task as { users?: unknown }).users)) {
+        const potentialUsers = (task as { users: unknown[] }).users || [];
         if (potentialUsers.length > 0 && typeof potentialUsers[0] === 'number') {
-          userIds = potentialUsers;
+          userIds = potentialUsers as number[];
         } else if (potentialUsers.length > 0 && typeof potentialUsers[0] === 'object') {
-          userIds = potentialUsers.map((u: { id?: number; user?: number }) => u.id || u.user).filter(Boolean) as number[];
+          userIds = (potentialUsers as { id?: number; user?: number }[]).map(u => u.id || u.user).filter((id): id is number => !!id);
         }
-        console.log('[TaskDialog] Found users in users property:', userIds);
-      }
-      // 3. Fallback: extract from submissions if it's a TaskDetail
-      else if ('submissions' in task && Array.isArray((task as import('@/types').TaskDetail).submissions)) {
+      } else if ('submissions' in task && Array.isArray((task as import('@/types').TaskDetail).submissions)) {
         userIds = (task as import('@/types').TaskDetail).submissions
           .map(s => s.user?.id || s.user)
           .filter((id): id is number => typeof id === 'number');
-        console.log('[TaskDialog] Found users in submissions:', userIds);
       }
 
-      setSelectedUsers([...new Set(userIds)]);
-    } else if (!open) {
-      // Small delay to prevent visual flicker while dialog is closing
-      setTimeout(() => {
-        setTitle('');
-        setDescription('');
-        setDate('');
-        setSelectedUsers([]);
-      }, 200);
+      const uniqueIds = [...new Set(userIds)];
+      setSelectedUsers(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(uniqueIds)) return prev;
+        return uniqueIds;
+      });
     }
   }, [task, open]);
 
@@ -208,25 +192,24 @@ export function TaskDialog({
                   {filteredUsers.map(user => {
                     if (!user.id) return null;
                     const isSelected = selectedUsers.includes(user.id);
+                    const checkboxId = `task-user-${user.id}`;
                     
                     return (
                       <div 
                         key={user.id} 
-                        className={`flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer ${
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
                           isSelected 
                             ? 'bg-primary/10 border border-primary/30' 
                             : 'hover:bg-white/5 border border-transparent'
                         }`}
-                        onClick={() => toggleUser(user.id!)}
                       >
                         <Checkbox
-                          id={`user-${user.id}`}
+                          id={checkboxId}
                           checked={isSelected}
                           onCheckedChange={() => toggleUser(user.id!)}
-                          className="pointer-events-none"
                         />
                         <Label 
-                          htmlFor={`user-${user.id}`} 
+                          htmlFor={checkboxId} 
                           className="text-sm font-medium leading-none cursor-pointer flex-1 py-1"
                         >
                           <div className="flex flex-col gap-0.5">
