@@ -22,9 +22,9 @@ export default function Projects() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   
-  const { data: adminTasks = [], isLoading: isLoadingAdmin } = useAdminTasks({ enabled: isAdmin });
-  const { data: memberTasks = [], isLoading: isLoadingMember } = useMemberTasks({ enabled: !isAdmin });
-  const { data: submissions = [], isLoading: isLoadingSubs } = useSubmissions();
+  const { data: adminTasks = [], isLoading: isLoadingAdmin } = useAdminTasks(undefined, { enabled: isAdmin });
+  const { data: memberTasks = [], isLoading: isLoadingMember } = useMemberTasks(undefined, { enabled: !isAdmin });
+  const { data: submissions = [], isLoading: isLoadingSubs } = useSubmissions(undefined, { enabled: !isAdmin });
   const createTask = useCreateTask();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);

@@ -7,41 +7,40 @@ import {
   TaskCreatePayload,
   TaskDetail,
   TaskSubmissionDetail,
-  TaskUpdatePayload
+  TaskUpdatePayload,
+  PaginatedResponse
 } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-export const useAdminTasks = (options?: { enabled?: boolean }) => {
+export const useAdminTasks = (params?: { page?: number } | { enabled?: boolean }, options?: { enabled?: boolean }) => {
+  const actualParams = params && 'page' in params ? params : undefined;
+  const actualOptions = options || (params && 'enabled' in params ? (params as { enabled?: boolean }) : undefined);
+
   return useQuery({
-    queryKey: ['admin-tasks'],
+    queryKey: ['admin-tasks', actualParams],
     queryFn: async () => {
-      const response = await api.get('/admin/tasks/');
-      const data = response.data as unknown;
-      if (
-        data &&
-        typeof data === 'object' &&
-        'results' in data &&
-        Array.isArray((data as { results: unknown }).results)
-      ) {
-        return (data as { results: Task[] }).results;
+      const response = await api.get<PaginatedResponse<Task> | Task[]>('admin/tasks/', { params: actualParams });
+      const data = response.data;
+      if (data && typeof data === 'object' && 'results' in data) {
+        return (data as PaginatedResponse<Task>).results || [];
       }
       if (Array.isArray(data)) {
         return data as Task[];
       }
       return [] as Task[];
     },
-    enabled: options?.enabled,
+    enabled: actualOptions?.enabled ?? true,
   });
 };
 
-export const useAdminTask = (id: number) => {
+export const useAdminTask = (id: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['admin-tasks', id],
     queryFn: async () => {
-      const response = await api.get<TaskDetail>(`/admin/tasks/${id}/`);
+      const response = await api.get<TaskDetail>(`admin/tasks/${id}/`);
       return response.data;
     },
-    enabled: !!id,
+    enabled: !!id && (options?.enabled ?? true),
   });
 };
 
@@ -49,7 +48,7 @@ export const useCreateTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: TaskCreatePayload) => {
-      const response = await api.post<Task>('/admin/tasks/', data);
+      const response = await api.post<Task>('admin/tasks/', data);
       return response.data;
     },
     onSuccess: () => {
@@ -77,7 +76,7 @@ export const usePartialUpdateTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: TaskUpdatePayload }) => {
-      const response = await api.patch<TaskDetail>(`/admin/tasks/${id}/`, data);
+      const response = await api.patch<TaskDetail>(`admin/tasks/${id}/`, data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -91,7 +90,7 @@ export const useFullUpdateTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: TaskCreatePayload }) => {
-      const response = await api.put<TaskDetail>(`/admin/tasks/${id}/`, data);
+      const response = await api.put<TaskDetail>(`admin/tasks/${id}/`, data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -105,7 +104,7 @@ export const useDeleteTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/admin/tasks/${id}/`);
+      await api.delete(`admin/tasks/${id}/`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
@@ -115,26 +114,35 @@ export const useDeleteTask = () => {
 
 // --- Admin Submission & Feedback Hooks ---
 
-export const useAdminSubmissions = (options?: { enabled?: boolean }) => {
+export const useAdminSubmissions = (params?: { page?: number } | { enabled?: boolean }, options?: { enabled?: boolean }) => {
+  const actualParams = params && 'page' in params ? params : undefined;
+  const actualOptions = options || (params && 'enabled' in params ? (params as { enabled?: boolean }) : undefined);
+
   return useQuery({
-    queryKey: ['admin-submissions'],
+    queryKey: ['admin-submissions', actualParams],
     queryFn: async () => {
-      const response = await api.get('/admin/submissions/');
-      const data = response.data as unknown;
-      if (
-        data &&
-        typeof data === 'object' &&
-        'results' in data &&
-        Array.isArray((data as { results: unknown }).results)
-      ) {
-        return (data as { results: TaskSubmissionDetail[] }).results;
+      const response = await api.get<PaginatedResponse<TaskSubmissionDetail> | TaskSubmissionDetail[]>('admin/submissions/', { params: actualParams });
+      const data = response.data;
+      if (data && typeof data === 'object' && 'results' in data) {
+        return (data as PaginatedResponse<TaskSubmissionDetail>).results || [];
       }
       if (Array.isArray(data)) {
         return data as TaskSubmissionDetail[];
       }
       return [] as TaskSubmissionDetail[];
     },
-    enabled: options?.enabled,
+    enabled: actualOptions?.enabled ?? true,
+  });
+};
+
+export const useAdminSubmission = (id: number) => {
+  return useQuery({
+    queryKey: ['admin-submissions', id],
+    queryFn: async () => {
+      const response = await api.get<TaskSubmissionDetail>(`admin/submissions/${id}/`);
+      return response.data;
+    },
+    enabled: !!id,
   });
 };
 
@@ -142,7 +150,7 @@ export const useAdminTaskSubmissions = (taskId: number, options?: { enabled?: bo
   return useQuery({
     queryKey: ['admin-task-submissions', taskId],
     queryFn: async () => {
-      const response = await api.get<TaskDetail>(`/admin/tasks/${taskId}/`);
+      const response = await api.get<TaskDetail>(`admin/tasks/${taskId}/`);
       return response.data.submissions || [];
     },
     enabled: !!taskId && options?.enabled,
@@ -153,7 +161,7 @@ export const useCreateFeedback = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: FeedbackCreatePayload) => {
-      const response = await api.post<Feedback>('/admin/feedback/', data);
+      const response = await api.post<Feedback>('admin/feedback/', data);
       return response.data;
     },
     onSuccess: () => {
@@ -167,7 +175,7 @@ export const useUpdateFeedback = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<FeedbackCreatePayload> }) => {
-      const response = await api.patch<Feedback>(`/admin/feedback/${id}/`, data);
+      const response = await api.patch<Feedback>(`admin/feedback/${id}/`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -181,7 +189,7 @@ export const useDeleteFeedback = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/admin/feedback/${id}/`);
+      await api.delete(`admin/feedback/${id}/`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-submissions'] });
@@ -190,36 +198,45 @@ export const useDeleteFeedback = () => {
   });
 };
 
-export const useMemberTasks = (options?: { enabled?: boolean }) => {
+export const useAdminFeedbackDetails = (id: number) => {
   return useQuery({
-    queryKey: ['member-tasks'],
+    queryKey: ['admin-feedback', id],
     queryFn: async () => {
-      const response = await api.get('/member/tasks/');
-      const data = response.data as unknown;
-      if (
-        data &&
-        typeof data === 'object' &&
-        'results' in data &&
-        Array.isArray((data as { results: unknown }).results)
-      ) {
-        return (data as { results: Task[] }).results;
+      const response = await api.get<Feedback>(`admin/feedback/${id}/`);
+      return response.data;
+    },
+    enabled: !!id,
+  });
+};
+
+export const useMemberTasks = (params?: { page?: number } | { enabled?: boolean }, options?: { enabled?: boolean }) => {
+  const actualParams = params && 'page' in params ? params : undefined;
+  const actualOptions = options || (params && 'enabled' in params ? (params as { enabled?: boolean }) : undefined);
+
+  return useQuery({
+    queryKey: ['member-tasks', actualParams],
+    queryFn: async () => {
+      const response = await api.get<PaginatedResponse<Task> | Task[]>('member/tasks/', { params: actualParams });
+      const data = response.data;
+      if (data && typeof data === 'object' && 'results' in data) {
+        return (data as PaginatedResponse<Task>).results || [];
       }
       if (Array.isArray(data)) {
         return data as Task[];
       }
       return [] as Task[];
     },
-    enabled: options?.enabled,
+    enabled: actualOptions?.enabled ?? true,
   });
 };
 
-export const useMemberTask = (id: number) => {
+export const useMemberTask = (id: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['member-tasks', id],
     queryFn: async () => {
-      const response = await api.get<Task>(`/member/tasks/${id}/`);
+      const response = await api.get<Task>(`member/tasks/${id}/`);
       return response.data;
     },
-    enabled: !!id,
+    enabled: !!id && (options?.enabled ?? true),
   });
 };

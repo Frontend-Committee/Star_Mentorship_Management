@@ -7,19 +7,35 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 // --- Admin Hooks ---
 
 // Helper to map committee/role name to API slug
-export const getCommitteeSlug = (name?: string): string => {
-  if (!name) return 'front_committee'; // Default
+type CommitteeSlug =
+  | 'front_committee'
+  | 'back_committee'
+  | 'mobile_committee'
+  | 'ai_committee'
+  | 'uiux_committee'
+  | 'data_analysis_committee';
+
+const COMMITTEE_MAP: { keywords: string[]; slug: CommitteeSlug }[] = [
+  { keywords: ['backend', 'back-end'], slug: 'back_committee' },
+  { keywords: ['mobile'], slug: 'mobile_committee' },
+  { keywords: ['ai', 'artificial intelligence'], slug: 'ai_committee' },
+  { keywords: ['ui', 'ux', 'design'], slug: 'uiux_committee' },
+  { keywords: ['data', 'analysis'], slug: 'data_analysis_committee' },
+];
+
+export const getCommitteeSlug = (name?: string): CommitteeSlug => {
+  if (!name) return 'front_committee';
+
   const lower = name.toLowerCase();
-  
-  if (lower.includes('back')) return 'back_committee';
-  if (lower.includes('mobile')) return 'mobile_committee';
-  if (lower.includes('ai') || lower.includes('intelligence')) return 'ai_committee';
-  if (lower.includes('ui') || lower.includes('ux') || lower.includes('design')) return 'uiux_committee';
-  if (lower.includes('data') || lower.includes('analysis')) return 'dataAnalysis_committee';
-  
+
+  for (const committee of COMMITTEE_MAP) {
+    if (committee.keywords.some(k => lower.includes(k))) {
+      return committee.slug;
+    }
+  }
+
   return 'front_committee';
 };
-
 // --- Admin Hooks ---
 
 export const useAdminSessions = (committeeSlug?: string, options?: { enabled?: boolean }) => {

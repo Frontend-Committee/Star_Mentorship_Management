@@ -4,18 +4,29 @@ import { MessageSquare, Star, CheckCircle, Clock } from 'lucide-react';
 import { useSubmissions } from '@/features/submissions/hooks';
 import { SubmissionSkeleton } from '@/components/submissions/SubmissionSkeleton';
 import { useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useAdminSubmissions } from '@/features/tasks/hooks';
 
 export default function Feedback() {
-  const { data: submissions = [], isLoading } = useSubmissions();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
+  const { data: memberSubmissions = [], isLoading: isMemberLoading } = useSubmissions(undefined, { enabled: !isAdmin });
+  const { data: adminSubmissions = [], isLoading: isAdminLoading } = useAdminSubmissions(undefined, { enabled: isAdmin });
+
+  const submissions = isAdmin ? adminSubmissions : memberSubmissions;
+  const isLoading = isAdmin ? isAdminLoading : isMemberLoading;
 
   const stats = useMemo(() => {
     const reviewed = submissions.filter((p) => p.feedback !== null);
-    const pending = submissions.filter((p) => p.status === 'SUBMITTED' && p.feedback === null);
+    const pending = submissions.filter((p) => {
+      const s = p.status?.toLowerCase();
+      return (s === 'submitted' || s === 'sub') && p.feedback === null;
+    });
     
     return {
       reviewed,
-      pending,
-      bestCount: submissions.filter((p: unknown) => (p as { isBest?: boolean }).isBest).length
+      pending
     };
   }, [submissions]);
 
@@ -34,7 +45,7 @@ export default function Feedback() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border-border/50 hover-lift">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -62,20 +73,6 @@ export default function Feedback() {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="border-border/50 hover-lift">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Best Projects</p>
-                <p className="text-3xl font-bold text-foreground mt-1">{stats.bestCount}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-primary/10">
-                <Star className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Feedback List */}
@@ -97,19 +94,22 @@ export default function Feedback() {
                       <MessageSquare className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-foreground">{(submission.task as unknown as { title?: string }).title || 'Task Submission'}</h4>
+                      <h4 className="font-medium text-foreground">
+                        {typeof submission.task === 'object' 
+                          ? submission.task?.title 
+                          : `Task #${submission.task}`}
+                      </h4>
+                      {isAdmin && 'user' in submission && (
+                        <p className="text-xs text-primary font-medium">
+                          Member: {(submission as any).user?.first_name} {(submission as any).user?.last_name}
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         Submitted on {submission.submitted_at && new Date(submission.submitted_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {(submission as unknown as { isBest?: boolean }).isBest && (
-                      <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                        <Star className="w-3 h-3 mr-1" />
-                        Best
-                      </Badge>
-                    )}
                     {submission.feedback?.score !== undefined && (
                       <Badge variant="default">Score: {submission.feedback.score}</Badge>
                     )}

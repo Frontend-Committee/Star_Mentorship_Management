@@ -32,10 +32,10 @@ export default function Members() {
   }, [searchQuery]);
 
   // Use real data from API for mentees
-  const { data: response, isLoading, error } = useMembersWithProgress({ search: debouncedSearchQuery });
+  const { data: response, isLoading, error } = useMembersWithProgress({ search: debouncedSearchQuery, enabled: isAdmin });
   
   // Use committee-specific endpoint for committee list
-  const { data: committeeData, isLoading: isLoadingCommittee } = useCommitteeMembers();
+  const { data: committeeData, isLoading: isLoadingCommittee } = useCommitteeMembers({ enabled: isAdmin });
 
   const deleteMemberMutation = useDeleteMember();
 

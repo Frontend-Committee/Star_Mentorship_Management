@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAdminTasks, useCreateTask, useMemberTasks } from '@/features/tasks/hooks';
 import { Task, TaskCreatePayload } from '@/types';
 import { CalendarDays, ChevronRight, LayoutList, Loader2, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -14,11 +14,15 @@ export default function TasksListPage() {
   const isAdmin = user?.role === 'admin';
   
   // Fetch tasks based on role
-  const { data: adminTasks, isLoading: isAdminLoading } = useAdminTasks({ enabled: isAdmin });
-  const { data: memberTasks, isLoading: isMemberLoading } = useMemberTasks({ enabled: !isAdmin && !!user });
+  const { data: adminTasks, isLoading: isAdminLoading } = useAdminTasks(undefined, { enabled: isAdmin });
+  const { data: memberTasks, isLoading: isMemberTasksLoading } = useMemberTasks(undefined, { enabled: !isAdmin && !!user });
   
-  const tasks = (isAdmin ? adminTasks : memberTasks) || [];
-  const isLoading = isAdmin ? isAdminLoading : isMemberLoading;
+  const tasks = useMemo(() => {
+    const rawTasks = (isAdmin ? adminTasks : memberTasks) || [];
+    return [...rawTasks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [isAdmin, adminTasks, memberTasks]);
+  
+  const isLoading = isAdmin ? isAdminLoading : isMemberTasksLoading;
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
@@ -29,9 +33,10 @@ export default function TasksListPage() {
         toast.success("Task created successfully");
         setIsTaskDialogOpen(false);
       },
-      onError: (error: any) => {
-        const errorMessage = error.response?.data 
-          ? Object.entries(error.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
+      onError: (error: unknown) => {
+        const axiosError = error as { response?: { data?: Record<string, unknown> } };
+        const errorMessage = axiosError.response?.data 
+          ? Object.entries(axiosError.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
           : "Failed to create task";
         toast.error(errorMessage);
       }
@@ -99,7 +104,7 @@ export default function TasksListPage() {
                     <CalendarDays className="w-4 h-4" />
                     <span>Due: {new Date(task.date).toLocaleDateString()}</span>
                   </div>
-                  <p className="text-muted-foreground line-clamp-3 text-sm">
+                  <p className="text-muted-foreground line-clamp-3 text-sm break-words">
                     {task.description}
                   </p>
                 </CardContent>
@@ -109,12 +114,14 @@ export default function TasksListPage() {
         </div>
       )}
 
-      <TaskDialog 
-        open={isTaskDialogOpen} 
-        onOpenChange={setIsTaskDialogOpen}
-        onSubmit={handleCreateTask}
-        isLoading={isCreating}
-      />
+      {isAdmin && (
+        <TaskDialog 
+          open={isTaskDialogOpen} 
+          onOpenChange={setIsTaskDialogOpen}
+          onSubmit={handleCreateTask}
+          isLoading={isCreating}
+        />
+      )}
     </div>
   );
 }

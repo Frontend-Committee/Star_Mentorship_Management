@@ -7,6 +7,7 @@ export const useCommitteeMembers = (options?: { enabled?: boolean }) => {
     queryKey: ['committee-members'],
     queryFn: async () => {
       let url = 'members/assign/?page_size=100';
+      // ... same logic ...
       let allResults: MemberMinimal[] = [];
       let pageCount = 0;
       const MAX_PAGES = 50;
@@ -22,7 +23,6 @@ export const useCommitteeMembers = (options?: { enabled?: boolean }) => {
            if (data.next) {
              try {
                const nextUrl = new URL(data.next);
-               // Assuming backend URL structure is consistent
                const pathParts = nextUrl.pathname.split('/api/');
                if (pathParts.length > 1) {
                  url = pathParts[1] + nextUrl.search;
@@ -37,10 +37,8 @@ export const useCommitteeMembers = (options?: { enabled?: boolean }) => {
              url = '';
            }
         } else if (Array.isArray(data)) {
-          // Direct array response
           return data;
         } else {
-          // Unexpected format or empty
           url = '';
         }
         pageCount++;

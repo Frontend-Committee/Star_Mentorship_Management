@@ -21,6 +21,7 @@ import {
   useUpdateFeedback,
   usePartialUpdateTask,
   useDeleteTask,
+  useDeleteFeedback,
 } from '@/features/tasks/hooks';
 import { FeedbackCreatePayload, Submission, TaskCreatePayload } from '@/types';
 import { CalendarDays, CheckCircle2, Clock, Edit, ExternalLink, Loader2, MessageSquare, Trash2 } from 'lucide-react';
@@ -36,14 +37,14 @@ export default function TaskDetailsPage() {
   const isAdmin = user?.role === 'admin';
 
   // Data Fetching
-  const { data: adminTask, isLoading: isAdminTaskLoading } = useAdminTask(taskId);
-  const { data: memberTask, isLoading: isMemberTaskLoading } = useMemberTask(taskId);
+  const { data: adminTask, isLoading: isAdminTaskLoading } = useAdminTask(taskId, { enabled: isAdmin });
+  const { data: memberTask, isLoading: isMemberTaskLoading } = useMemberTask(taskId, { enabled: !isAdmin });
   const task = isAdmin ? adminTask : memberTask;
   const isTaskLoading = isAdmin ? isAdminTaskLoading : isMemberTaskLoading;
 
   // Submissions Data
   const { data: adminSubmissions, isLoading: isAdminSubsLoading } = useAdminTaskSubmissions(taskId, { enabled: isAdmin });
-  const { data: memberSubmissions, isLoading: isMemberSubsLoading } = useMemberSubmissions({ enabled: !isAdmin },);
+  const { data: memberSubmissions, isLoading: isMemberSubsLoading } = useMemberSubmissions(undefined, { enabled: !isAdmin });
 
   // For member, find their specific submission for this task
   const mySubmission = !isAdmin && memberSubmissions
@@ -57,19 +58,23 @@ export default function TaskDetailsPage() {
   const { mutate: updateFeedback, isPending: isUpdatingFeedback } = useUpdateFeedback();
   const { mutate: partialUpdateTask, isPending: isUpdatingTask } = usePartialUpdateTask();
   const { mutate: deleteTask, isPending: isDeletingTask } = useDeleteTask();
+  const { mutate: deleteFeedback, isPending: isDeletingFeedback } = useDeleteFeedback();
   const navigate = useNavigate();
 
   // State
   const [submissionUrl, setSubmissionUrl] = useState('');
   const [submissionNote, setSubmissionNote] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isFeedbackDeleteDialogOpen, setIsFeedbackDeleteDialogOpen] = useState(false);
+  const [feedbackToDelete, setFeedbackToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     if (mySubmission) {
-      setSubmissionUrl(mySubmission.task_url);
+      setSubmissionUrl(mySubmission.task_url || '');
       setSubmissionNote(mySubmission.note || '');
     }
   }, [mySubmission]);
@@ -77,22 +82,50 @@ export default function TaskDetailsPage() {
   // Handlers
   const handleMemberSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      task: taskId,
-      task_url: submissionUrl,
-      note: submissionNote,
-      status: 'SUBMITTED' as const
-    };
-
+    
     if (mySubmission) {
-      updateSubmission({ id: mySubmission.id, data: payload }, {
-        onSuccess: () => toast.success("Submission updated successfully"),
-        onError: () => toast.error("Failed to update submission")
+      // Update payload for PUT should NOT include the task ID according to docs
+      const updatePayload = {
+        task_url: submissionUrl,
+        note: submissionNote.trim() || "Work submission",
+        status: 'sub' as const
+      };
+
+      updateSubmission({ id: mySubmission.id, data: updatePayload, usePut: true }, {
+        onSuccess: () => {
+          toast.success("Submission updated successfully");
+          setIsEditing(false);
+        },
+        onError: (error: unknown) => {
+          const axiosError = error as { response?: { data?: Record<string, unknown> } };
+          const errorData = axiosError.response?.data;
+          const errorMessage = errorData
+            ? Object.entries(errorData).map(([key, value]) => `${key}: ${value}`).join(', ')
+            : "Failed to update submission";
+          toast.error(errorMessage);
+        }
       });
     } else {
-      createSubmission(payload, {
-        onSuccess: () => toast.success("Work submitted successfully"),
-        onError: () => toast.error("Failed to submit work")
+      // Create payload MUST include the task ID
+      const createPayload = {
+        task: taskId,
+        task_url: submissionUrl,
+        note: submissionNote.trim() || "Work submission",
+        status: 'sub' as const
+      };
+      
+      createSubmission(createPayload, {
+        onSuccess: () => {
+          toast.success("Work submitted successfully");
+        },
+        onError: (error: unknown) => {
+          const axiosError = error as { response?: { data?: Record<string, unknown> } };
+          const errorData = axiosError.response?.data;
+          const errorMessage = errorData
+            ? Object.entries(errorData).map(([key, value]) => `${key}: ${value}`).join(', ')
+            : "Failed to submit work";
+          toast.error(errorMessage);
+        }
       });
     }
   };
@@ -134,9 +167,10 @@ export default function TaskDetailsPage() {
         toast.success("Task updated successfully");
         setIsTaskDialogOpen(false);
       },
-      onError: (error: any) => {
-        const errorMessage = error.response?.data
-          ? Object.entries(error.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
+      onError: (error: unknown) => {
+        const axiosError = error as { response?: { data?: Record<string, unknown> } };
+        const errorMessage = axiosError.response?.data
+          ? Object.entries(axiosError.response.data).map(([key, value]) => `${key}: ${value}`).join(', ')
           : "Failed to update task";
         toast.error(errorMessage);
       }
@@ -165,8 +199,8 @@ export default function TaskDetailsPage() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground leading-tight">{task.title}</h1>
-              <div className="flex items-center gap-4 text-muted-foreground text-sm">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-foreground leading-tight">{task.title}</h1>
+              <div className="flex items-center gap-4 text-muted-foreground text-xs sm:text-sm">
                 <span className="flex items-center gap-1.5 font-medium text-primary">
                   <CalendarDays className="w-4 h-4" />
                   Due {new Date(task.date).toLocaleDateString()}
@@ -174,12 +208,12 @@ export default function TaskDetailsPage() {
               </div>
             </div>
             {isAdmin && (
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={() => setIsTaskDialogOpen(true)} variant="outline" className="flex-1 sm:flex-none gap-2 h-9 text-xs sm:text-sm">
+              <div className="flex flex-row sm:flex-nowrap gap-2 w-full sm:w-auto">
+                <Button onClick={() => setIsTaskDialogOpen(true)} variant="outline" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs">
                   <Edit className="w-3.5 h-3.5" />
-                  Edit Task
+                  Edit
                 </Button>
-                <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" className="flex-1 sm:flex-none gap-2 h-9 text-xs sm:text-sm">
+                <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs">
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete
                 </Button>
@@ -192,7 +226,7 @@ export default function TaskDetailsPage() {
             <CardTitle className="text-lg">Description</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed break-words overflow-hidden">
               {task.description}
             </p>
           </CardContent>
@@ -218,15 +252,15 @@ export default function TaskDetailsPage() {
                 No submissions yet.
               </div>
             ) : (
-              <div className="overflow-x-auto -mx-1 px-1">
+              <div className="overflow-x-auto rounded-lg border border-border/50">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-muted/50">
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-[150px] sm:w-auto font-bold uppercase tracking-wider text-[10px]">Member</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px]">Status</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px]">Date</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px]">Score</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px] text-right">Actions</TableHead>
+                      <TableHead className="w-[180px] sm:w-auto font-bold uppercase tracking-wider text-[10px] py-4">Member</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4">Status</TableHead>
+                      <TableHead className="hidden sm:table-cell font-bold uppercase tracking-wider text-[10px] py-4">Date</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4">Score</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px] text-right py-4 pr-6">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -245,7 +279,7 @@ export default function TaskDetailsPage() {
                               {sub.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden sm:table-cell">
                             {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : '-'}
                           </TableCell>
                           <TableCell>
@@ -255,12 +289,12 @@ export default function TaskDetailsPage() {
                               </span>
                             ) : '-'}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1.5">
+                          <TableCell className="text-right pr-6">
+                            <div className="flex justify-end items-center gap-1.5">
                               {sub.task_url && (
                                 <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10">
                                   <a href={sub.task_url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="w-4 h-4" />
+                                    <ExternalLink className="w-3.5 h-3.5" />
                                   </a>
                                 </Button>
                               )}
@@ -268,10 +302,24 @@ export default function TaskDetailsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openFeedbackDialog(sub)}
-                                className="h-8 text-[10px] font-bold uppercase"
+                                className="h-8 px-2 text-[9px] sm:text-[10px] font-bold uppercase"
                               >
-                                {sub.feedback ? 'Edit Grade' : 'Grade'}
+                                {sub.feedback ? 'Edit' : 'Grade'}
                               </Button>
+                              {sub.feedback && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setFeedbackToDelete(sub.feedback!.id);
+                                    setIsFeedbackDeleteDialogOpen(true);
+                                  }}
+                                  disabled={isDeletingFeedback}
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 hidden sm:flex"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -297,7 +345,7 @@ export default function TaskDetailsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {mySubmission?.status === 'SUBMITTED' ? (
+              {['submitted', 'sub', 'reviewed'].includes(String(mySubmission?.status || '').toLowerCase()) && !isEditing ? (
                 <div className="space-y-4">
                   <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg flex items-start gap-3 border border-green-200 dark:border-green-900">
                     <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
@@ -314,9 +362,9 @@ export default function TaskDetailsPage() {
                       href={mySubmission.task_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-primary hover:underline truncate"
+                      className="flex items-start gap-2 text-primary hover:underline break-all text-sm"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-4 h-4 mt-0.5 shrink-0" />
                       {mySubmission.task_url}
                     </a>
                   </div>
@@ -328,11 +376,7 @@ export default function TaskDetailsPage() {
                   )}
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      // Allow re-submission/edit logic if needed, 
-                      // for now we can just show the form again or a specific "Edit" button that toggles state.
-                      // But simplify: just show form below if they want to update.
-                    }}
+                    onClick={() => setIsEditing(true)}
                     className="w-full mt-2"
                   >
                     Update Submission
@@ -351,7 +395,7 @@ export default function TaskDetailsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="note">Notes (Optional)</Label>
+                    <Label htmlFor="note">Notes</Label>
                     <Textarea
                       id="note"
                       placeholder="Any comments for the reviewer..."
@@ -360,10 +404,22 @@ export default function TaskDetailsPage() {
                       rows={3}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={isSubmitting || isUpdatingSub}>
-                    {(isSubmitting || isUpdatingSub) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Submit Work
-                  </Button>
+                  <div className="flex gap-2">
+                    {isEditing && (
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        className="flex-1" 
+                        onClick={() => setIsEditing(false)}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                    <Button type="submit" className="flex-[2]" disabled={isSubmitting || isUpdatingSub}>
+                      {(isSubmitting || isUpdatingSub) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      {mySubmission ? 'Update Work' : 'Submit Work'}
+                    </Button>
+                  </div>
                 </form>
               )}
 
@@ -375,34 +431,7 @@ export default function TaskDetailsPage() {
                   Let's change logic: Always show form, but button says "Update" if exists.
                   And show status badge at top.
               */}
-              {mySubmission?.status === 'SUBMITTED' && (
-                <div className="mt-6 pt-6 border-t">
-                  <h4 className="text-sm font-semibold mb-4">Edit Submission</h4>
-                  <form onSubmit={handleMemberSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-url">Project URL</Label>
-                      <Input
-                        id="edit-url"
-                        value={submissionUrl}
-                        onChange={(e) => setSubmissionUrl(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-note">Notes</Label>
-                      <Textarea
-                        id="edit-note"
-                        value={submissionNote}
-                        onChange={(e) => setSubmissionNote(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-                    <Button type="submit" variant="outline" className="w-full" disabled={isSubmitting || isUpdatingSub}>
-                      Update
-                    </Button>
-                  </form>
-                </div>
-              )}
+
             </CardContent>
           </Card>
 
@@ -435,7 +464,7 @@ export default function TaskDetailsPage() {
                   <Clock className="w-10 h-10 opacity-20" />
                   <p>No feedback available yet.</p>
                   <p className="text-xs">
-                    {mySubmission?.status === 'SUBMITTED'
+                    {['submitted', 'sub', 'reviewed'].includes(String(mySubmission?.status || '').toLowerCase())
                       ? "Your submission is under review."
                       : "Submit your work to receive feedback."}
                   </p>
@@ -447,39 +476,61 @@ export default function TaskDetailsPage() {
       )}
 
       {/* Admin Task Edit Dialog */}
-      <TaskDialog
-        open={isTaskDialogOpen}
-        onOpenChange={setIsTaskDialogOpen}
-        onSubmit={handleUpdateTask}
-        task={task}
-        isLoading={isUpdatingTask}
-      />
+      {isAdmin && (
+        <>
+          <TaskDialog
+            open={isTaskDialogOpen}
+            onOpenChange={setIsTaskDialogOpen}
+            onSubmit={handleUpdateTask}
+            task={task}
+            isLoading={isUpdatingTask}
+          />
 
-      {/* Admin Feedback Dialog */}
-      <FeedbackDialog
-        open={isFeedbackDialogOpen}
-        onOpenChange={setIsFeedbackDialogOpen}
-        onSubmit={handleFeedbackSubmit}
-        submission={selectedSubmission}
-        isLoading={isCreatingFeedback || isUpdatingFeedback}
-      />
+          <FeedbackDialog
+            open={isFeedbackDialogOpen}
+            onOpenChange={setIsFeedbackDialogOpen}
+            onSubmit={handleFeedbackSubmit}
+            submission={selectedSubmission}
+            isLoading={isCreatingFeedback || isUpdatingFeedback}
+          />
 
-      <DeleteConfirmationDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={() => {
-            deleteTask(taskId, {
-                onSuccess: () => {
-                    toast.success("Task deleted successfully");
-                    navigate('/tasks');
-                },
-                onError: () => toast.error("Failed to delete task")
-            });
-        }}
-        title="Delete Task"
-        description="Are you sure you want to delete this task? This action cannot be undone and will delete all member submissions associated with it."
-        isLoading={isDeletingTask}
-      />
+          <DeleteConfirmationDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            onConfirm={() => {
+                deleteTask(taskId, {
+                    onSuccess: () => {
+                        toast.success("Task deleted successfully");
+                        navigate('/tasks');
+                    },
+                    onError: () => toast.error("Failed to delete task")
+                });
+            }}
+            title="Delete Task"
+            description="Are you sure you want to delete this task? This action cannot be undone and will delete all member submissions associated with it."
+            isLoading={isDeletingTask}
+          />
+          <DeleteConfirmationDialog
+            open={isFeedbackDeleteDialogOpen}
+            onOpenChange={setIsFeedbackDeleteDialogOpen}
+            onConfirm={() => {
+              if (feedbackToDelete) {
+                deleteFeedback(feedbackToDelete, {
+                  onSuccess: () => {
+                    toast.success("Feedback deleted");
+                    setIsFeedbackDeleteDialogOpen(false);
+                    setFeedbackToDelete(null);
+                  },
+                  onError: () => toast.error("Failed to delete feedback")
+                });
+              }
+            }}
+            isLoading={isDeletingFeedback}
+            title="Delete Feedback"
+            description="Are you sure you want to delete this feedback? The score and note will be permanently removed."
+          />
+        </>
+      )}
     </div>
   );
 }

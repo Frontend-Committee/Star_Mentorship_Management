@@ -127,7 +127,7 @@ export interface TaskDetail extends Task {
 
 // --- Submission Types ---
 
-export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'MISSED';
+export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'MISSED' | 'pending' | 'submitted' | 'missed' | 'pen' | 'sub' | 'mis';
 
 export interface Feedback {
   id: number;
@@ -167,8 +167,8 @@ export interface MemberSubmission {
 }
 
 export interface MemberSubmissionUpdatePayload {
-  note?: string;
-  task_url?: string;
+  note?: string | null;
+  task_url?: string | null;
   status?: SubmissionStatus;
 }
 

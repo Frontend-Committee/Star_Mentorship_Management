@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Clock,
   Star,
+  LayoutList,
   TrendingUp,
   Users,
   ArrowUpRight
@@ -41,11 +42,11 @@ export default function Dashboard() {
   const { data: membersResponse, isLoading: isLoadingUsers } = useMembersWithProgress({ enabled: isAdmin });
   const users = useMemo(() => membersResponse?.results || [], [membersResponse]);
   const { data: adminSessions = [], isLoading: isLoadingSess } = useAdminSessions(committeeSlug, { enabled: isAdmin });
-  const { data: adminTasks = [], isLoading: isLoadingTasks } = useAdminTasks({ enabled: isAdmin });
-  const { data: adminSubmissions = [], isLoading: isLoadingSubmissions } = useAdminSubmissions({ enabled: isAdmin });
+  const { data: adminTasks = [], isLoading: isLoadingTasks } = useAdminTasks(undefined, { enabled: isAdmin });
+  const { data: adminSubmissions = [], isLoading: isLoadingSubmissions } = useAdminSubmissions(undefined, { enabled: isAdmin });
  
-  const { data: memberTasks = [], isLoading: isLoadingMTasks } = useMemberTasks({ enabled: !isAdmin });
-  const { data: memberSubmissions = [], isLoading: isLoadingMSubs } = useSubmissions();
+  const { data: memberTasks = [], isLoading: isLoadingMTasks } = useMemberTasks(undefined, { enabled: !isAdmin });
+  const { data: memberSubmissions = [], isLoading: isLoadingMSubs } = useSubmissions(undefined, { enabled: !isAdmin });
   const { data: apiWeeks = [], isLoading: isLoadingWeeks } = useWeeks(user?.role);
   const { data: announcements = [], isLoading: isLoadingAnnouncements } = useAnnouncements();
 
@@ -84,20 +85,20 @@ export default function Dashboard() {
       const items = (adminWeek.week_items || memberWeek.items || []) as (import('@/types').WeekItemAdminDetail | import('@/types').MemberItem)[];
       
       const isCompleted = items.length > 0 && items.every((item) => {
-        const itemWithProgress = item as { week_progress?: any };
+        const itemWithProgress = item as { week_progress?: unknown };
         const wp = itemWithProgress.week_progress;
         if (!wp) return false;
         
         if (Array.isArray(wp)) {
-          return wp.some((p: any) => {
-            const progressUserId = p.user?.id || p.user;
-            const isOwnProgress = !progressUserId || String(progressUserId) === String(user.id);
+          return wp.some((p: { user?: { id: number } | number; is_finished: boolean }) => {
+            const progressUserId = typeof p.user === 'object' ? p.user?.id : p.user;
+            const isOwnProgress = !progressUserId || String(progressUserId) === String(user?.id);
             return p.is_finished && isOwnProgress;
           });
         }
         
         // Single object format (Member API)
-        return wp.is_finished;
+        return (wp as { is_finished: boolean }).is_finished;
       });
 
       const weekNumber = (week as { number?: number }).number || 0;
@@ -163,7 +164,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div className={`grid gap-3 sm:gap-4 ${isAdmin ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2'}`}>
         {isAdmin ? (
           <>
             <StatCard
@@ -187,20 +188,16 @@ export default function Dashboard() {
         ) : (
           <>
             <StatCard
-              title="Weeks Completed"
+              title="Assigned Tasks"
+              value={memberTasks.length}
+              icon={LayoutList}
+              className="col-span-1"
+            />
+            <StatCard
+              title="Weeks"
               value={`${memberStats?.completedWeeks || 0}/${memberStats?.totalWeeksCount || 0}`}
               icon={BookOpen}
-            />
-            <StatCard
-              title="Tasks Submitted"
-              value={memberStats?.submittedCount || 0}
-              icon={CheckCircle}
-            />
-            <StatCard
-              title="Pending Tasks"
-              value={(memberTasks.length - (memberStats?.submittedCount || 0)) > 0 ? (memberTasks.length - (memberStats?.submittedCount || 0)) : 0}
-              icon={Clock}
-              className="col-span-2 lg:col-span-1"
+              className="col-span-1"
             />
           </>
         )}

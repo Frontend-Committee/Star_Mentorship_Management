@@ -1,27 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
-import { Feedback, MemberSubmission, MemberSubmissionUpdatePayload, SubmissionCreatePayload } from '../../types';
+import { Feedback, MemberSubmission, MemberSubmissionUpdatePayload, SubmissionCreatePayload, PaginatedResponse } from '../../types';
 
-export const useSubmissions = (options?: { enabled?: boolean }) => {
+export const useSubmissions = (params?: { page?: number } | { enabled?: boolean }, options?: { enabled?: boolean }) => {
+  const actualParams = params && 'page' in params ? params : undefined;
+  const actualOptions = options || (params && 'enabled' in params ? (params as { enabled?: boolean }) : undefined);
+
   return useQuery({
-    queryKey: ['member-submissions'],
+    queryKey: ['member-submissions', actualParams],
     queryFn: async () => {
-      const response = await api.get('/member/submissions/');
-      const data = response.data as unknown;
-      if (
-        data &&
-        typeof data === 'object' &&
-        'results' in data &&
-        Array.isArray((data as { results: unknown }).results)
-      ) {
-        return (data as { results: MemberSubmission[] }).results;
+      const response = await api.get<PaginatedResponse<MemberSubmission> | MemberSubmission[]>('member/submissions/', { params: actualParams });
+      const data = response.data;
+      
+      // Handle DRF pagination
+      if (data && typeof data === 'object' && 'results' in data) {
+        return (data as PaginatedResponse<MemberSubmission>).results || [];
       }
+      
       if (Array.isArray(data)) {
         return data as MemberSubmission[];
       }
       return [] as MemberSubmission[];
     },
-    enabled: options?.enabled,
+    enabled: actualOptions?.enabled ?? true,
   });
 };
 
@@ -29,7 +30,7 @@ export const useSubmission = (id: number) => {
   return useQuery({
     queryKey: ['member-submissions', id],
     queryFn: async () => {
-      const response = await api.get<MemberSubmission>(`/member/submissions/${id}/`);
+      const response = await api.get<MemberSubmission>(`member/submissions/${id}/`);
       return response.data;
     },
     enabled: !!id,
@@ -40,18 +41,14 @@ export const useSubmissionByTaskId = (taskId: number) => {
   return useQuery({
     queryKey: ['submissionByTask', taskId],
     queryFn: async () => {
-      const response = await api.get('/member/submissions/');
+      const response = await api.get<PaginatedResponse<MemberSubmission> | MemberSubmission[]>('member/submissions/');
       let results: MemberSubmission[] = [];
-      const data = response.data as unknown;
-      if (
-        data &&
-        typeof data === 'object' &&
-        'results' in data &&
-        Array.isArray((data as { results: unknown }).results)
-      ) {
-        results = (data as { results: MemberSubmission[] }).results;
+      const data = response.data;
+      
+      if (data && typeof data === 'object' && 'results' in data) {
+        results = (data as PaginatedResponse<MemberSubmission>).results || [];
       } else if (Array.isArray(data)) {
-        results = data as MemberSubmission[];
+        results = data;
       }
 
       const submission = results.find(s => s.task.id === taskId);
@@ -69,7 +66,7 @@ export const useCreateSubmission = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: SubmissionCreatePayload) => {
-      const response = await api.post<MemberSubmission>('/member/submissions/', data);
+      const response = await api.post<MemberSubmission>('member/submissions/', data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -85,8 +82,9 @@ export const useUpdateSubmission = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: MemberSubmissionUpdatePayload }) => {
-      const response = await api.patch<MemberSubmission>(`/member/submissions/${id}/`, data);
+    mutationFn: async ({ id, data, usePut = false }: { id: number; data: MemberSubmissionUpdatePayload; usePut?: boolean }) => {
+      const method = usePut ? 'put' : 'patch';
+      const response = await api[method]<MemberSubmission>(`member/submissions/${id}/`, data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -98,25 +96,26 @@ export const useUpdateSubmission = () => {
   });
 };
 
-export const useMemberFeedbacks = () => {
+export const useMemberFeedbacks = (params?: { page?: number } | { enabled?: boolean }, options?: { enabled?: boolean }) => {
+  const actualParams = params && 'page' in params ? params : undefined;
+  const actualOptions = options || (params && 'enabled' in params ? (params as { enabled?: boolean }) : undefined);
+
   return useQuery({
-    queryKey: ['member-feedbacks'],
+    queryKey: ['member-feedbacks', actualParams],
     queryFn: async () => {
-      const response = await api.get('/member/feedback/');
-      const data = response.data as unknown;
-      if (
-        data &&
-        typeof data === 'object' &&
-        'results' in data &&
-        Array.isArray((data as { results: unknown }).results)
-      ) {
-        return (data as { results: Feedback[] }).results;
+      const response = await api.get<PaginatedResponse<Feedback> | Feedback[]>('member/feedback/', { params: actualParams });
+      const data = response.data;
+      
+      if (data && typeof data === 'object' && 'results' in data) {
+        return (data as PaginatedResponse<Feedback>).results || [];
       }
+      
       if (Array.isArray(data)) {
         return data as Feedback[];
       }
       return [] as Feedback[];
     },
+    enabled: actualOptions?.enabled ?? true,
   });
 };
 
@@ -124,7 +123,7 @@ export const useMemberFeedback = (id: number) => {
   return useQuery({
     queryKey: ['member-feedbacks', id],
     queryFn: async () => {
-      const response = await api.get<Feedback>(`/member/feedback/${id}/`);
+      const response = await api.get<Feedback>(`member/feedback/${id}/`);
       return response.data;
     },
     enabled: !!id,
