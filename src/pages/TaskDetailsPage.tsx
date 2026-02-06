@@ -282,7 +282,7 @@ export default function TaskDetailsPage() {
                                 className="h-8 px-3 text-[11px] font-bold uppercase tracking-wider shadow-sm"
                                 onClick={() => openFeedbackDialog(sub)}
                               >
-                                {sub.feedback ? 'Edit Grade' : 'Grade Tool'}
+                                {sub.feedback ? 'Edit Grade' : 'Add Grade'}
                               </Button>
                             </div>
                           </TableCell>
