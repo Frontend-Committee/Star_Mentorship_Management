@@ -161,7 +161,7 @@ export function AddWeekItemDialog({
             Add a new resource or task to this week.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto flex-1 px-1">
+        <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto flex-1 px-1 custom-scrollbar">
           <div className="space-y-2">
             <Label htmlFor="item-title">Title *</Label>
             <Input

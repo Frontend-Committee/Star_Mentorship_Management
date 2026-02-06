@@ -197,7 +197,7 @@ export function EditWeekItemDialog({
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto flex-1 px-1">
+          <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto flex-1 px-1 custom-scrollbar">
             <div className="space-y-2">
               <Label htmlFor="edit-item-title">Title *</Label>
               <Input
