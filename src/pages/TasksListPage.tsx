@@ -17,7 +17,15 @@ export default function TasksListPage() {
   const { data: adminTasks, isLoading: isAdminLoading } = useAdminTasks({ enabled: isAdmin });
   const { data: memberTasks, isLoading: isMemberLoading } = useMemberTasks({ enabled: !isAdmin && !!user });
   
-  const tasks = (isAdmin ? adminTasks : memberTasks) || [];
+  const tasks = isAdmin 
+    ? (adminTasks || []) 
+    : (memberTasks || []).filter(task => {
+        // Safe check: If strict assignment fields are missing, assume intended visibility
+        const assigneeIds = task.assigned_to || (task as any).users;
+        if (!assigneeIds) return true; 
+
+        return Array.isArray(assigneeIds) && assigneeIds.includes(Number(user?.id));
+    });
   const isLoading = isAdmin ? isAdminLoading : isMemberLoading;
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
@@ -39,18 +47,18 @@ export default function TasksListPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground">Tasks</h1>
-          <p className="text-muted-foreground mt-1">
+    <div className="container mx-auto px-4 py-8 md:p-6 space-y-6 md:space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground">Tasks</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             {isAdmin 
               ? "Manage committee tasks and assignments." 
               : "View your assigned tasks and submit your work."}
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setIsTaskDialogOpen(true)} className="gap-2 shadow-lg hover:shadow-xl transition-all">
+          <Button onClick={() => setIsTaskDialogOpen(true)} className="w-full sm:w-auto gap-2 shadow-lg hover:shadow-xl transition-all">
             <Plus className="w-4 h-4" />
             Create Task
           </Button>
@@ -83,7 +91,7 @@ export default function TasksListPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {tasks.map((task) => (
             <Link key={task.id} to={`/tasks/${task.id}`} className="block h-full group">
-              <Card className="h-full hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary/50 group-hover:border-l-primary">
+              <Card className="h-full hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary/50 group-hover:border-l-primary flex flex-col">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start gap-2">
                     <CardTitle className="text-xl font-bold line-clamp-2 group-hover:text-primary transition-colors">
@@ -92,14 +100,17 @@ export default function TasksListPage() {
                     <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 flex-1 flex flex-col">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CalendarDays className="w-4 h-4" />
                     <span>Due: {new Date(task.date).toLocaleDateString()}</span>
                   </div>
-                  <p className="text-muted-foreground line-clamp-3 text-sm">
+                  <p className="text-muted-foreground line-clamp-3 text-sm break-all">
                     {task.description}
                   </p>
+                  <div className="mt-auto pt-2 flex items-center text-primary font-medium text-sm group-hover:underline">
+                    View Details <ChevronRight className="w-4 h-4 ml-1" />
+                  </div>
                 </CardContent>
               </Card>
             </Link>

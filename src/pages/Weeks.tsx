@@ -59,26 +59,52 @@ export default function Weeks() {
   const deleteItem = useDeleteWeekItem();
   
   const { data: apiWeeks, isLoading, error } = useWeeks(user?.role);
+  console.log('DEBUG: apiWeeks:', apiWeeks);
 
   const weeks = useMemo<WeekContent[]>(() => {
-    if (!apiWeeks) return [];
+    let weekList = [];
+    if (Array.isArray(apiWeeks)) {
+      weekList = apiWeeks;
+    } else if (apiWeeks && typeof apiWeeks === 'object' && Array.isArray((apiWeeks as any).results)) {
+      weekList = (apiWeeks as any).results;
+    } else if (apiWeeks && typeof apiWeeks === 'object' && Array.isArray((apiWeeks as any).weeks)) {
+      weekList = (apiWeeks as any).weeks;
+    } else {
+      return [];
+    }
 
-    return apiWeeks.map((week: import('@/types').WeekDetail | import('@/types').MemberWeekDetail) => {
-      const adminWeek = week as import('@/types').WeekDetail;
-      const memberWeek = week as import('@/types').MemberWeekDetail;
-      const items = (adminWeek.week_items || memberWeek.items || []) as (import('@/types').WeekItemAdminDetail | import('@/types').MemberItem)[];
+    return weekList.map((week: any) => {
+      // Determine items based on role/structure
+      // Admin API: week_items, Member API: items
+      const rawItems = week.week_items || week.items || [];
       
-      const isCompleted = items.length > 0 && items.every((item) => {
-        const itemWithProgress = item as { week_progress?: WeekProgress[] };
-        const progressArr = itemWithProgress.week_progress || [];
-        return Array.isArray(progressArr) && progressArr.some((p: WeekProgress) => 
-          p.is_finished && (!user?.id || p.user?.id === user.id || !p.user)
-        );
+      const items = rawItems.map((item: any) => ({
+        ...item,
+        // Ensure week_progress is always an array
+        week_progress: Array.isArray(item.week_progress) ? item.week_progress : []
+      }));
+      
+      // Check completion status
+      // For Admin: Check if logic requires specific user (not relevant for general list usually, but code had it)
+      // For Member: Check if personal progress exists and is_finished is true. Member API only returns own progress.
+      const isCompleted = items.length > 0 && items.every((item: any) => {
+        const progressArr = item.week_progress || [];
+        if (isAdmin) {
+           // If admin, this logic might be checking if *someone* finished it? 
+           // Or strictly adhering to the previous logic.
+           // Previous logic: p.is_finished && (!userId || p.user.id === userId)
+           // For admin list view, we might just check if "I" finished it if I'm admin? Or ignore.
+           return true; // Admin view content management doesn't usually track "Admin's completion"
+        } else {
+           // Member view: Only returns my progress.
+           return progressArr.some((p: any) => p.is_finished);
+        }
       });
       
-      const weekNumber = (week as { number?: number }).number || 0;
-      const weekData = week as Record<string, unknown>;
-      const description = (weekData.description as string) || (items.length > 0 ? (items[0] as { notes?: string }).notes : '') || '';
+      const weekNumber = week.number || 0;
+      // Fallback description from first item if week description is missing/empty
+      const firstItemNote = items.length > 0 ? items[0].notes : '';
+      const description = (week.description as string) || firstItemNote || '';
       const cleanDescription = description === '--' ? '' : description.trim();
 
       return {
@@ -86,15 +112,15 @@ export default function Weeks() {
         weekNumber: weekNumber,
         title: week.title,
         description: cleanDescription,
-        isCompleted,
+        isCompleted: !isAdmin && isCompleted, // Only relevant for members
         items: items,
-        notes: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('note'))?.resource,
-        slides: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('slide'))?.resource,
-        challengeLink: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('challenge'))?.resource,
-        formLink: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('form'))?.resource,
+        notes: items.find((item: any) => item.title?.toLowerCase().includes('note'))?.resource,
+        slides: items.find((item: any) => item.title?.toLowerCase().includes('slide'))?.resource,
+        challengeLink: items.find((item: any) => item.title?.toLowerCase().includes('challenge'))?.resource,
+        formLink: items.find((item: any) => item.title?.toLowerCase().includes('form'))?.resource,
       };
     });
-  }, [apiWeeks, user?.id]);
+  }, [apiWeeks, isAdmin]);
 
   const completedWeeks = weeks.filter((w) => w.isCompleted).length;
   const progressPercentage = weeks.length > 0 ? Math.round((completedWeeks / weeks.length) * 100) : 0;

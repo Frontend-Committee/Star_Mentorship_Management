@@ -8,12 +8,12 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useCommitteeMembers } from '@/features/members/hooks';
 import { Task, TaskCreatePayload } from '@/types';
 import { Loader2, Search } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 interface TaskDialogProps {
   open: boolean;
@@ -30,13 +30,17 @@ export function TaskDialog({
   task,
   isLoading
 }: TaskDialogProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
+  const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers({ 
+    enabled: open && isAdmin 
+  });
 
   // Filter members based on search query
   const filteredUsers = useMemo(() => {
@@ -87,15 +91,13 @@ export function TaskDialog({
     e.preventDefault();
     if (!title.trim() || !date) return;
 
-    // Convert date to ISO format for backend (YYYY-MM-DDThh:mm:ssZ)
-    const isoDate = new Date(date).toISOString();
-
+    // Backend expects 'date' in YYYY-MM-DD format
+    // <input type="date"> value is already in this format
     onSubmit({
       title: title.trim(),
       description: description.trim(),
-      date: isoDate,
+      date: date, // yyyy-mm-dd
       users: selectedUsers,
-      assigned_to: selectedUsers,
     });
   };
 

@@ -17,11 +17,15 @@ export const useWeeks = (role?: string) => {
       const endpoint = role === 'admin' ? 'admin/weeks/' : 'member/weeks/';
       const response = await api.get(endpoint);
       const data = response.data;
-      
+      console.log('DEBUG: useWeeks raw response data:', data);
+
       // Handle the new PaginatedWeekList structure from Apidog
       if (data && typeof data === 'object') {
-        if ('results' in data && Array.isArray(data.results)) {
-          return data.results;
+        if ('weeks' in data && Array.isArray((data as any).weeks)) {
+          return (data as any).weeks;
+        }
+        if ('results' in data && Array.isArray((data as any).results)) {
+          return (data as any).results;
         }
         if (Array.isArray(data)) {
           return data;

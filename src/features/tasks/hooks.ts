@@ -34,16 +34,20 @@ export const useAdminTasks = (options?: { enabled?: boolean }) => {
   });
 };
 
-export const useAdminTask = (id: number) => {
+export const useAdminTask = (id: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['admin-tasks', id],
     queryFn: async () => {
       const response = await api.get<TaskDetail>(`/admin/tasks/${id}/`);
       return response.data;
     },
-    enabled: !!id,
+    enabled: !!id && (options?.enabled ?? true),
   });
 };
+
+// ... (other hooks remain unchanged)
+
+
 
 export const useCreateTask = () => {
   const queryClient = useQueryClient();
@@ -196,6 +200,7 @@ export const useMemberTasks = (options?: { enabled?: boolean }) => {
     queryFn: async () => {
       const response = await api.get('/member/tasks/');
       const data = response.data as unknown;
+      console.log('DEBUG: useMemberTasks raw response:', data);
       if (
         data &&
         typeof data === 'object' &&
@@ -213,13 +218,13 @@ export const useMemberTasks = (options?: { enabled?: boolean }) => {
   });
 };
 
-export const useMemberTask = (id: number) => {
+export const useMemberTask = (id: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['member-tasks', id],
     queryFn: async () => {
       const response = await api.get<Task>(`/member/tasks/${id}/`);
       return response.data;
     },
-    enabled: !!id,
+    enabled: !!id && (options?.enabled ?? true),
   });
 };

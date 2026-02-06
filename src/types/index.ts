@@ -113,15 +113,14 @@ export interface TaskCreatePayload {
   title: string;
   description: string;
   date: string;
-  users?: number[];  // Used by backend for creation
-  assigned_to?: number[]; // Used for display/edit if needed, but backend expects 'users' for creation
+  users: number[]; // Required array of user IDs
 }
 
 export interface TaskUpdatePayload {
   title?: string;
   description?: string;
   date?: string;
-  assigned_to?: number[];
+  users?: number[];
 }
 
 export interface TaskDetail extends Task {
@@ -439,7 +438,7 @@ export interface Achievement {
   earnedAt: string;
 }
 
-export interface MemberProgress {
+export interface MemberDashboardStats {
   userId: string;
   completedWeeks: number;
   totalWeeks: number;
