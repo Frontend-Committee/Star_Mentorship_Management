@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { useCommitteeMembers } from '@/features/members/hooks';
-import { Task, TaskCreatePayload } from '@/types';
-import { Loader2, Search } from 'lucide-react';
+import { useCommitteeMembers, useCommitteeGroups } from '@/features/members/hooks';
+import { Task, TaskCreatePayload, CommitteeGroup } from '@/types';
+import { Loader2, Search, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useEffect, useState, useMemo } from 'react';
 
 interface TaskDialogProps {
@@ -37,19 +38,34 @@ export function TaskDialog({
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
+  const { data: groups, isLoading: isLoadingGroups } = useCommitteeGroups();
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<number | 'all'>('all');
 
   // Filter members based on search query
   const filteredUsers = useMemo(() => {
     if (!users) return [];
-    if (!searchQuery.trim()) return users;
+    
+    let result = users;
+
+    // Filter by group if selected
+    if (selectedGroupFilter !== 'all' && groups) {
+      const group = groups.find(g => g.id === selectedGroupFilter);
+      if (group?.users) {
+        // Handle both full user objects and plain IDs
+        const groupUserIds = group.users.map((u: any) => u.id || u);
+        result = result.filter(u => u.id && groupUserIds.includes(u.id));
+      }
+    }
+
+    if (!searchQuery.trim()) return result;
     
     const query = searchQuery.toLowerCase();
-    return users.filter(user => {
+    return result.filter(user => {
       const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
       const email = (user.email || '').toLowerCase();
       return fullName.includes(query) || email.includes(query);
     });
-  }, [users, searchQuery]);
+  }, [users, searchQuery, selectedGroupFilter, groups]);
 
   useEffect(() => {
     if (open && task) {
@@ -108,11 +124,46 @@ export function TaskDialog({
   };
 
   const toggleAll = () => {
-    if (!users) return;
-    if (selectedUsers.length === users.length) {
-      setSelectedUsers([]);
+    if (!filteredUsers.length) return;
+    
+    const allFilteredSelected = filteredUsers.every(u => u.id && selectedUsers.includes(u.id));
+    
+    if (allFilteredSelected) {
+      // Deselect all visible
+      const visibleIds = filteredUsers.map(u => u.id!).filter(Boolean);
+      setSelectedUsers(prev => prev.filter(id => !visibleIds.includes(id)));
     } else {
-      setSelectedUsers(users.map(u => u.id));
+      // Select all visible
+      const visibleIds = filteredUsers.map(u => u.id!).filter(Boolean);
+      setSelectedUsers(prev => {
+        const newIds = [...prev];
+        visibleIds.forEach(id => {
+          if (!newIds.includes(id)) newIds.push(id);
+        });
+        return newIds;
+      });
+    }
+  };
+
+  const assignGroup = (group: CommitteeGroup) => {
+    if (!group.users) return;
+    
+    // Handle both full user objects and plain IDs
+    const groupUserIds = group.users.map((u: any) => u.id || u).filter((id: any): id is number => !!id);
+    const allGroupSelected = groupUserIds.every((id: number) => selectedUsers.includes(id));
+
+    if (allGroupSelected) {
+      // Deselect group members
+      setSelectedUsers(prev => prev.filter(id => !groupUserIds.includes(id)));
+    } else {
+      // Select group members
+      setSelectedUsers(prev => {
+        const newIds = [...prev];
+        groupUserIds.forEach((id: number) => {
+          if (!newIds.includes(id)) newIds.push(id);
+        });
+        return newIds;
+      });
     }
   };
 
@@ -158,17 +209,74 @@ export function TaskDialog({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-base">Assign to Members ({selectedUsers.length})</Label>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="sm" 
-                onClick={toggleAll} 
-                className="h-auto py-1 px-2 text-xs hover:bg-primary/10"
-              >
-                {users && selectedUsers.length === users.length ? 'Deselect All' : 'Select All'}
-              </Button>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base">Assign to Members ({selectedUsers.length})</Label>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={toggleAll} 
+                  className="h-auto py-1 px-2 text-xs hover:bg-primary/10"
+                >
+                  {filteredUsers.length > 0 && filteredUsers.every(u => u.id && selectedUsers.includes(u.id)) 
+                    ? 'Deselect Visible' 
+                    : 'Select Visible'}
+                </Button>
+              </div>
+
+              {/* Group Quick Select */}
+              {groups && groups.length > 0 && (
+                <div className="flex flex-wrap gap-2 pb-2">
+                  <Button
+                    type="button"
+                    variant={selectedGroupFilter === 'all' ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedGroupFilter('all')}
+                    className="h-7 text-xs rounded-full"
+                  >
+                    All Members
+                  </Button>
+                  {groups.map(group => {
+                    // Handle both full user objects and plain IDs
+                    const groupUserIds = group.users?.map((u: any) => u.id || u).filter((id: any) => !!id) || [];
+                    const isFullySelected = groupUserIds.length > 0 && groupUserIds.every((id: number) => selectedUsers.includes(id));
+                    const isPartiallySelected = !isFullySelected && groupUserIds.some((id: number) => selectedUsers.includes(id));
+
+                    return (
+                      <div key={group.id} className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant={selectedGroupFilter === group.id ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedGroupFilter(group.id === selectedGroupFilter ? 'all' : group.id)}
+                          className={`h-7 text-xs rounded-l-full rounded-r-none border-r-0 ${
+                            isFullySelected ? 'bg-primary/10 border-primary/30 text-primary' : ''
+                          }`}
+                        >
+                          {group.name}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => assignGroup(group)}
+                          className={`h-7 px-2 text-xs rounded-r-full rounded-l-none border-l ${
+                            isFullySelected 
+                              ? 'bg-primary text-primary-foreground hover:bg-primary/90 border-primary' 
+                              : isPartiallySelected
+                              ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
+                              : 'hover:bg-primary/5'
+                          }`}
+                          title={isFullySelected ? "Deselect Group" : "Select Group"}
+                        >
+                          {isFullySelected ? '-' : '+'}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             
             {/* Search Input */}

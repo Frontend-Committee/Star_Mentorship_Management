@@ -269,14 +269,30 @@ export default function TaskDetailsPage() {
                         ? sub.user
                         : { id: sub.user, first_name: 'Member', last_name: `#${sub.user}`, email: '' };
 
+                      const getStatusConfig = (status: string) => {
+                        const s = status?.toLowerCase() || '';
+                        if (['submitted', 'sub', 'reviewed'].includes(s)) {
+                          return { color: 'bg-green-500/15 text-green-700 border-green-500/20 hover:bg-green-500/25', label: status };
+                        }
+                        if (['pending', 'pen'].includes(s)) {
+                          return { color: 'bg-yellow-500/15 text-yellow-700 border-yellow-500/20 hover:bg-yellow-500/25', label: status };
+                        }
+                        if (['missed', 'mis'].includes(s)) {
+                          return { color: 'bg-red-500/15 text-red-700 border-red-500/20 hover:bg-red-500/25', label: status };
+                        }
+                        return { color: 'bg-secondary text-secondary-foreground', label: status };
+                      };
+
+                      const statusConfig = getStatusConfig(sub.status);
+
                       return (
                         <TableRow key={sub.id} className="group transition-colors">
                           <TableCell className="font-medium whitespace-nowrap">
                             {user.first_name} {user.last_name}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={sub.status === 'SUBMITTED' ? 'default' : 'secondary'} className="text-[10px] font-bold">
-                              {sub.status}
+                            <Badge variant="outline" className={`text-[10px] font-bold border ${statusConfig.color}`}>
+                              {statusConfig.label}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden sm:table-cell">
@@ -290,11 +306,12 @@ export default function TaskDetailsPage() {
                             ) : '-'}
                           </TableCell>
                           <TableCell className="text-right pr-6">
-                            <div className="flex justify-end items-center gap-1.5">
+                            <div className="flex justify-end items-center gap-2">
                               {sub.task_url && (
-                                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10">
+                                <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-[10px] font-bold uppercase hover:text-primary hover:bg-primary/5">
                                   <a href={sub.task_url} target="_blank" rel="noopener noreferrer">
                                     <ExternalLink className="w-3.5 h-3.5" />
+                                    Review Task
                                   </a>
                                 </Button>
                               )}
@@ -303,9 +320,9 @@ export default function TaskDetailsPage() {
                                 size="sm"
                                 onClick={() => openFeedbackDialog(sub)}
                                 disabled={!['SUBMITTED', 'submitted', 'sub', 'reviewed', 'REVIEWED'].includes(sub.status)}
-                                className="h-8 px-2 text-[9px] sm:text-[10px] font-bold uppercase"
+                                className="h-8 px-2 text-[9px] sm:text-[10px] font-bold uppercase bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground border-primary"
                               >
-                                {sub.feedback ? 'Edit' : 'Grade'}
+                                {sub.feedback ? 'Edit Grade' : 'Grade'}
                               </Button>
                               {sub.feedback && (
                                 <Button
