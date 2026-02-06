@@ -15,17 +15,17 @@ interface StatCardProps {
 
 export default function StatCard({ title, value, icon: Icon, trend, className }: StatCardProps) {
   return (
-    <Card className={cn('hover-lift border-border/50', className)}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
+    <Card className={cn('hover-lift border-border/50 h-full', className)}>
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-none">{title}</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-foreground">{value}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-foreground">{value}</span>
               {trend && (
                 <span
                   className={cn(
-                    'text-sm font-medium',
+                    'text-xs sm:text-sm font-medium',
                     trend.isPositive ? 'text-green-600' : 'text-destructive'
                   )}
                 >
@@ -34,8 +34,8 @@ export default function StatCard({ title, value, icon: Icon, trend, className }:
               )}
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-primary/10">
-            <Icon className="w-6 h-6 text-primary" />
+          <div className="p-2 sm:p-3 rounded-xl bg-primary/10 shrink-0">
+            <Icon className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
           </div>
         </div>
       </CardContent>

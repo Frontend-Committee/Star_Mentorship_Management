@@ -181,6 +181,7 @@ export default function Dashboard() {
               title="Active Tasks"
               value={adminStats?.activeTasks || 0}
               icon={TrendingUp}
+              className="col-span-2 lg:col-span-1"
             />
           </>
         ) : (
@@ -199,6 +200,7 @@ export default function Dashboard() {
               title="Pending Tasks"
               value={(memberTasks.length - (memberStats?.submittedCount || 0)) > 0 ? (memberTasks.length - (memberStats?.submittedCount || 0)) : 0}
               icon={Clock}
+              className="col-span-2 lg:col-span-1"
             />
           </>
         )}
