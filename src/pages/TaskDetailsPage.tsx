@@ -388,12 +388,6 @@ export default function TaskDetailsPage() {
                       {mySubmission.task_url}
                     </a>
                   </div>
-                  {mySubmission.note && (
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase text-muted-foreground font-bold">Your Note</Label>
-                      <p className="text-sm bg-muted p-3 rounded-md">{mySubmission.note}</p>
-                    </div>
-                  )}
                   <Button
                     variant="outline"
                     onClick={() => setIsEditing(true)}
@@ -423,30 +417,6 @@ export default function TaskDetailsPage() {
                          Please provide a GitHub repo, Google Drive folder (public access required), or a live project URL.
                       </p>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="note" className="text-sm font-semibold">Notes</Label>
-                      {submissionNote && (
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => setSubmissionNote('')}
-                          className="h-6 px-2 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10 font-bold uppercase transition-all"
-                        >
-                          Clear Notes
-                        </Button>
-                      )}
-                    </div>
-                    <Textarea
-                      id="note"
-                      placeholder="Any comments for the reviewer..."
-                      value={submissionNote}
-                      onChange={(e) => setSubmissionNote(e.target.value)}
-                      rows={4}
-                      className="bg-background resize-none"
-                    />
                   </div>
                   <div className="flex gap-3 pt-2">
                     {isEditing && (
