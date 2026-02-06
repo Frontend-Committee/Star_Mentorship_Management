@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/context/AuthContext';
-import { useAdminSessions } from '@/features/sessions/hooks';
+import { useAdminSessions, getCommitteeSlug } from '@/features/sessions/hooks';
 import { useSubmissions } from '@/features/submissions/hooks';
 import { useAdminSubmissions, useAdminTasks, useMemberTasks } from '@/features/tasks/hooks';
 import { useMembersWithProgress } from '@/features/members/hooks';
@@ -35,11 +35,12 @@ export default function Dashboard() {
 
   // --- Data Fetching ---
   const { data: committee } = useCommitteeDetails();
+  const committeeSlug = getCommitteeSlug(committee?.name);
   const referenceId = committee?.reference_id;
 
   const { data: membersResponse, isLoading: isLoadingUsers } = useMembersWithProgress({ enabled: isAdmin });
   const users = useMemo(() => membersResponse?.results || [], [membersResponse]);
-  const { data: adminSessions = [], isLoading: isLoadingSess } = useAdminSessions({ enabled: isAdmin });
+  const { data: adminSessions = [], isLoading: isLoadingSess } = useAdminSessions(committeeSlug, { enabled: isAdmin });
   const { data: adminTasks = [], isLoading: isLoadingTasks } = useAdminTasks({ enabled: isAdmin });
   const { data: adminSubmissions = [], isLoading: isLoadingSubmissions } = useAdminSubmissions({ enabled: isAdmin });
  

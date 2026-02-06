@@ -6,11 +6,28 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // --- Admin Hooks ---
 
-export const useAdminSessions = (options?: { enabled?: boolean }) => {
+// Helper to map committee/role name to API slug
+export const getCommitteeSlug = (name?: string): string => {
+  if (!name) return 'front_committee'; // Default
+  const lower = name.toLowerCase();
+  
+  if (lower.includes('back')) return 'back_committee';
+  if (lower.includes('mobile')) return 'mobile_committee';
+  if (lower.includes('ai') || lower.includes('intelligence')) return 'ai_committee';
+  if (lower.includes('ui') || lower.includes('ux') || lower.includes('design')) return 'uiux_committee';
+  if (lower.includes('data') || lower.includes('analysis')) return 'dataAnalysis_committee';
+  
+  return 'front_committee';
+};
+
+// --- Admin Hooks ---
+
+export const useAdminSessions = (committeeSlug?: string, options?: { enabled?: boolean }) => {
   return useQuery({
-    queryKey: ['admin-sessions'],
+    queryKey: ['admin-sessions', committeeSlug],
     queryFn: async () => {
-      const response = await attendanceApi.get<any>('/sessions/front_committee/');
+      if (!committeeSlug) return [] as Session[];
+      const response = await attendanceApi.get<any>(`/sessions/${committeeSlug}/`);
       // Handle DRF pagination
       if (response.data && Array.isArray(response.data.results)) {
         return response.data.results as Session[];
@@ -20,26 +37,27 @@ export const useAdminSessions = (options?: { enabled?: boolean }) => {
       }
       return [] as Session[];
     },
-    enabled: options?.enabled,
+    enabled: options?.enabled && !!committeeSlug,
   });
 };
 
-export const useAdminSession = (id: number) => {
+export const useAdminSession = (committeeSlug: string, id: number) => {
   return useQuery({
-    queryKey: ['admin-sessions', id],
+    queryKey: ['admin-sessions', committeeSlug, id],
     queryFn: async () => {
-      const response = await attendanceApi.get<Session>(`/sessions/front_committee/${id}/`);
+      const response = await attendanceApi.get<Session>(`/sessions/${committeeSlug}/${id}/`);
       return response.data;
     },
-    enabled: !!id,
+    enabled: !!id && !!committeeSlug,
   });
 };
 
-export const useCreateSession = () => {
+export const useCreateSession = (committeeSlug?: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: SessionCreatePayload) => {
-      const response = await attendanceApi.post<Session>('/sessions/front_committee/', data);
+      if (!committeeSlug) throw new Error("Committee slug is missing");
+      const response = await attendanceApi.post<Session>(`/sessions/${committeeSlug}/`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -51,11 +69,12 @@ export const useCreateSession = () => {
   });
 };
 
-export const useUpdateSession = () => {
+export const useUpdateSession = (committeeSlug?: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<SessionCreatePayload> }) => {
-      const response = await attendanceApi.patch<Session>(`/sessions/front_committee/${id}/`, data);
+      if (!committeeSlug) throw new Error("Committee slug is missing");
+      const response = await attendanceApi.patch<Session>(`/sessions/${committeeSlug}/${id}/`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -64,11 +83,12 @@ export const useUpdateSession = () => {
   });
 };
 
-export const useDeleteSession = () => {
+export const useDeleteSession = (committeeSlug?: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      await attendanceApi.delete(`/sessions/front_committee/${id}/`);
+      if (!committeeSlug) throw new Error("Committee slug is missing");
+      await attendanceApi.delete(`/sessions/${committeeSlug}/${id}/`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sessions'] });
@@ -91,11 +111,12 @@ export const useUpdateAttendance = () => {
 
 // --- Member Hooks ---
 
-export const useMemberSessions = (options?: { enabled?: boolean }) => {
+export const useMemberSessions = (committeeSlug?: string, options?: { enabled?: boolean }) => {
   return useQuery({
-    queryKey: ['member-sessions'],
+    queryKey: ['member-sessions', committeeSlug],
     queryFn: async () => {
-      const response = await attendanceApi.get<any>('/sessions/front_committee/');
+      if (!committeeSlug) return [] as Session[];
+      const response = await attendanceApi.get<any>(`/sessions/${committeeSlug}/`);
       if (response.data && Array.isArray(response.data.results)) {
         return response.data.results as Session[];
       }
@@ -104,7 +125,7 @@ export const useMemberSessions = (options?: { enabled?: boolean }) => {
       }
       return [] as Session[];
     },
-    enabled: options?.enabled,
+    enabled: options?.enabled && !!committeeSlug,
   });
 };
 

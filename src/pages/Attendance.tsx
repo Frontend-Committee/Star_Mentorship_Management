@@ -10,7 +10,8 @@ import {
   useCreateSession,
   useDeleteSession,
   useMemberSessions,
-  useUpdateSession
+  useUpdateSession,
+  getCommitteeSlug
 } from '@/features/sessions/hooks';
 import { useCommitteeDetails } from '@/features/committees/hooks';
 import { useToast } from '@/hooks/use-toast';
@@ -32,10 +33,11 @@ export default function Sessions() {
   const { toast } = useToast();
 
   const { data: committee } = useCommitteeDetails();
+  const committeeSlug = getCommitteeSlug(committee?.name);
   const referenceId = committee?.reference_id;
 
-  const { data: adminSessions, isLoading: isAdminLoading } = useAdminSessions({ enabled: isAdmin });
-  const { data: memberSessions, isLoading: isMemberLoading } = useMemberSessions({ enabled: !isAdmin && !!user });
+  const { data: adminSessions, isLoading: isAdminLoading } = useAdminSessions(committeeSlug, { enabled: isAdmin });
+  const { data: memberSessions, isLoading: isMemberLoading } = useMemberSessions(committeeSlug, { enabled: !isAdmin && !!user });
   
   const sessions = (isAdmin ? adminSessions : memberSessions) || [];
   const isLoading = isAdmin ? isAdminLoading : isMemberLoading;
@@ -46,9 +48,9 @@ export default function Sessions() {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
 
-  const { mutate: createSession, isPending: isCreating } = useCreateSession();
-  const { mutate: updateSession, isPending: isUpdating } = useUpdateSession();
-  const { mutate: deleteSession, isPending: isDeleting } = useDeleteSession();
+  const { mutate: createSession, isPending: isCreating } = useCreateSession(committeeSlug);
+  const { mutate: updateSession, isPending: isUpdating } = useUpdateSession(committeeSlug);
+  const { mutate: deleteSession, isPending: isDeleting } = useDeleteSession(committeeSlug);
 
   const handleCreateSession = () => {
     setEditingSession(null);
