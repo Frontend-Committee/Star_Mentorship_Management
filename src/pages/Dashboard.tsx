@@ -83,11 +83,20 @@ export default function Dashboard() {
       const items = (adminWeek.week_items || memberWeek.items || []) as (import('@/types').WeekItemAdminDetail | import('@/types').MemberItem)[];
       
       const isCompleted = items.length > 0 && items.every((item) => {
-        const itemWithProgress = item as { week_progress?: import('@/types').WeekProgress[] };
-        const progressArr = itemWithProgress.week_progress || [];
-        return Array.isArray(progressArr) && progressArr.some((p) => 
-          p.is_finished && (!user?.id || p.user?.id === user.id || !p.user)
-        );
+        const itemWithProgress = item as { week_progress?: any };
+        const wp = itemWithProgress.week_progress;
+        if (!wp) return false;
+        
+        if (Array.isArray(wp)) {
+          return wp.some((p: any) => {
+            const progressUserId = p.user?.id || p.user;
+            const isOwnProgress = !progressUserId || String(progressUserId) === String(user.id);
+            return p.is_finished && isOwnProgress;
+          });
+        }
+        
+        // Single object format (Member API)
+        return wp.is_finished;
       });
 
       const weekNumber = (week as { number?: number }).number || 0;

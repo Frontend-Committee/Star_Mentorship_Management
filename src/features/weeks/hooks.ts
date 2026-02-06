@@ -17,12 +17,19 @@ export const useWeeks = (role?: string) => {
       const endpoint = role === 'admin' ? 'admin/weeks/' : 'member/weeks/';
       const response = await api.get(endpoint);
       const data = response.data;
+      console.log(`Raw API Response (${endpoint}):`, data);
       
-      // Handle the new PaginatedWeekList structure from Apidog
+      // Handle different response structures
       if (data && typeof data === 'object') {
+        // Option 1: { weeks: [...] } - What the user is currently seeing
+        if ('weeks' in data && Array.isArray(data.weeks)) {
+          return data.weeks;
+        }
+        // Option 2: { results: [...] } - Standard DRF pagination
         if ('results' in data && Array.isArray(data.results)) {
           return data.results;
         }
+        // Option 3: [...] - Direct array
         if (Array.isArray(data)) {
           return data;
         }
@@ -229,6 +236,22 @@ export const useCreateProgress = () => {
 };
 
 /**
+ * Fetch all personal progress entries (Student - Paginated)
+ * GET /member/progress/
+ */
+export const useMemberProgressList = (page: number = 1) => {
+  return useQuery({
+    queryKey: ['memberProgressList', page],
+    queryFn: async () => {
+      const response = await api.get(`member/progress/`, {
+        params: { page }
+      });
+      return response.data; // Returns PaginatedResponse<MemberProgress>
+    },
+  });
+};
+
+/**
  * Fetch personal progress information (Student)
  * GET /member/progress/{id}/
  */
@@ -252,13 +275,18 @@ export const useUpdateMemberProgress = () => {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: MemberProgressUpdate }) => {
+      console.log(`Updating progress for ID ${id}:`, data);
       const response = await api.put(`member/progress/${id}/update/`, data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Progress updated successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['weeks'] });
       queryClient.invalidateQueries({ queryKey: ['memberProgress'] });
     },
+    onError: (error) => {
+      console.error('Failed to update progress:', error);
+    }
   });
 };
 

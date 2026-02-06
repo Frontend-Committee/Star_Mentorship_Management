@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { AddWeekItemDialog } from '@/components/dialogs/AddWeekItemDialog';
 import { EditWeekItemDialog } from '@/components/dialogs/EditWeekItemDialog';
 import { ViewItemProgressDialog } from '@/components/dialogs/ViewItemProgressDialog';
 import { WeekContent, WeekProgress } from '@/types';
-import { useWeeks, useDeleteWeek, useDeleteWeekItem } from '@/features/weeks/hooks';
+import { useWeeks, useDeleteWeek, useDeleteWeekItem, useUpdateMemberProgress } from '@/features/weeks/hooks';
 import { DeleteConfirmationDialog } from '@/components/dialogs/DeleteConfirmationDialog';
 import { WeeksSkeleton } from '@/components/weeks/WeeksSkeleton';
 import {
@@ -57,23 +57,39 @@ export default function Weeks() {
   // Mutations
   const deleteWeek = useDeleteWeek();
   const deleteItem = useDeleteWeekItem();
+  const updateMemberProgress = useUpdateMemberProgress();
   
   const { data: apiWeeks, isLoading, error } = useWeeks(user?.role);
+  
+  useEffect(() => {
+    console.log('API Weeks Data:', apiWeeks);
+    console.log('User Role:', user?.role);
+    if (error) console.error('API Error:', error);
+  }, [apiWeeks, user?.role, error]);
 
   const weeks = useMemo<WeekContent[]>(() => {
     if (!apiWeeks) return [];
-
-    return apiWeeks.map((week: import('@/types').WeekDetail | import('@/types').MemberWeekDetail) => {
+    
+    const processed = apiWeeks.map((week: import('@/types').WeekDetail | import('@/types').MemberWeekDetail) => {
       const adminWeek = week as import('@/types').WeekDetail;
       const memberWeek = week as import('@/types').MemberWeekDetail;
       const items = (adminWeek.week_items || memberWeek.items || []) as (import('@/types').WeekItemAdminDetail | import('@/types').MemberItem)[];
       
       const isCompleted = items.length > 0 && items.every((item) => {
-        const itemWithProgress = item as { week_progress?: WeekProgress[] };
-        const progressArr = itemWithProgress.week_progress || [];
-        return Array.isArray(progressArr) && progressArr.some((p: WeekProgress) => 
-          p.is_finished && (!user?.id || p.user?.id === user.id || !p.user)
-        );
+        const itemWithProgress = item as { week_progress?: any };
+        const wp = itemWithProgress.week_progress;
+        if (!wp) return false;
+        
+        if (Array.isArray(wp)) {
+          return wp.some((p: any) => {
+            const progressUserId = p.user?.id || p.user;
+            const isOwnProgress = !progressUserId || String(progressUserId) === String(user.id);
+            return p.is_finished && isOwnProgress;
+          });
+        }
+        
+        // Single object format (Member API)
+        return wp.is_finished;
       });
       
       const weekNumber = (week as { number?: number }).number || 0;
@@ -94,19 +110,151 @@ export default function Weeks() {
         formLink: items.find((item: import('@/types').MemberItem | import('@/types').WeekItemAdminDetail) => item.title?.toLowerCase().includes('form'))?.resource,
       };
     });
+
+    console.log('Processed Weeks Data:', processed);
+    return processed;
   }, [apiWeeks, user?.id]);
 
   const completedWeeks = weeks.filter((w) => w.isCompleted).length;
   const progressPercentage = weeks.length > 0 ? Math.round((completedWeeks / weeks.length) * 100) : 0;
 
-  const handleMarkComplete = (weekId: string) => {
-    toast({
-      title: 'Week Completed!',
-      description: 'Great progress! Keep up the good work.',
-    });
+  const handleMarkComplete = async (weekId: string) => {
+    if (!user?.id) {
+      console.warn('Cannot mark complete: No user ID found');
+      return;
+    }
+    
+    console.log(`Attempting to mark week ${weekId} as complete...`);
+    
+    try {
+      const week = weeks.find(w => w.id === weekId);
+      if (!week) {
+        console.warn(`Week ${weekId} not found in local state`);
+        return;
+      }
+
+      if (!week.items || week.items.length === 0) {
+        console.log('No items in this week to mark complete.');
+        toast({ title: 'Week marked as complete' });
+        return;
+      }
+      
+      const itemsToUpdate = week.items.filter(item => {
+        const wp = (item as any).week_progress;
+        if (!wp) return false;
+        
+        if (Array.isArray(wp)) {
+          const userProgress = wp.find((p: any) => {
+            const progressUserId = p.user?.id || p.user;
+            return !progressUserId || String(progressUserId) === String(user.id);
+          });
+          return userProgress && userProgress.id;
+        }
+        
+        // Single object format
+        return wp.id;
+      });
+
+      if (itemsToUpdate.length === 0 && week.items.length > 0) {
+        console.log('Debug - Week Item 0:', week.items[0]);
+        console.log('Debug - Auth User ID:', user.id, typeof user.id);
+      }
+
+      console.log(`Found ${itemsToUpdate.length} assigned items to update.`);
+
+      if (itemsToUpdate.length === 0) {
+        toast({ 
+          title: 'Not Assigned', 
+          description: 'You cannot complete this week because no items are assigned to you.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      const updatePromises = itemsToUpdate.map(item => {
+        const wp = (item as any).week_progress;
+        const userProgress = Array.isArray(wp) 
+          ? wp.find((p: any) => {
+              const progressUserId = p.user?.id || p.user;
+              return !progressUserId || String(progressUserId) === String(user.id);
+            })
+          : wp;
+        
+        return updateMemberProgress.mutateAsync({
+          id: userProgress.id,
+          data: { is_finished: true }
+        });
+      });
+      
+      await Promise.all(updatePromises);
+      
+      toast({
+        title: 'Week Completed!',
+        description: 'Great progress! Keep up the good work.',
+      });
+    } catch (error) {
+      console.error('Failed to complete week:', error);
+      toast({
+        title: 'Failed to update progress',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleMarkIncomplete = (weekId: string) => {
+  const handleMarkIncomplete = async (weekId: string) => {
+    if (!user?.id) return;
+    
+    try {
+      const week = weeks.find(w => w.id === weekId);
+      if (!week || !week.items) return;
+      
+      const itemsToUpdate = week.items.filter(item => {
+        const wp = (item as any).week_progress;
+        if (!wp) return false;
+        
+        if (Array.isArray(wp)) {
+          const userProgress = wp.find((p: any) => {
+            const progressUserId = p.user?.id || p.user;
+            return !progressUserId || String(progressUserId) === String(user.id);
+          });
+          return userProgress && userProgress.id;
+        }
+        
+        return wp.id;
+      });
+
+      if (itemsToUpdate.length === 0) return;
+
+      const updatePromises = itemsToUpdate.map(item => {
+        const wp = (item as any).week_progress;
+        const userProgress = Array.isArray(wp) 
+          ? wp.find((p: any) => {
+              const progressUserId = p.user?.id || p.user;
+              return !progressUserId || String(progressUserId) === String(user.id);
+            })
+          : wp;
+        
+        return updateMemberProgress.mutateAsync({
+          id: userProgress.id,
+          data: { is_finished: false }
+        });
+      });
+      
+      await Promise.all(updatePromises);
+      
+      toast({
+        title: 'Progress updated',
+        description: 'Week marked as incomplete.',
+      });
+    } catch (error) {
+      console.error('Failed to mark incomplete:', error);
+      toast({
+        title: 'Failed to update progress',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDeleteWeek = async () => {
@@ -373,11 +521,76 @@ export default function Weeks() {
                                         </div>
                                       )}
                                       
-                                      {!isAdmin && (Array.isArray(item.week_progress) && item.week_progress.some(p => p.is_finished && (!user?.id || p.user?.id === user.id))) && (
-                                        <Badge variant="secondary" className="bg-green-500/10 text-green-500 hover:bg-green-500/15 border border-green-500/20 text-[9px] font-bold uppercase tracking-wider h-7 px-2">
-                                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                                          Finished
-                                        </Badge>
+                                      {!isAdmin && (
+                                        <div className="flex items-center">
+                                          {(() => {
+                                            const itemWithProgress = item as { week_progress?: any };
+                                            const wp = itemWithProgress.week_progress;
+                                            if (!wp) return (
+                                              <Badge variant="outline" className="text-[9px] h-6 text-muted-foreground/50 border-muted-foreground/10 italic font-medium px-2">
+                                                Not Assigned
+                                              </Badge>
+                                            );
+
+                                            const userProgress = Array.isArray(wp) 
+                                              ? wp.find((p: any) => {
+                                                  const progressUserId = p.user?.id || p.user;
+                                                  return !progressUserId || String(progressUserId) === String(user.id);
+                                                })
+                                              : wp;
+                                            
+                                            const isFinished = userProgress?.is_finished || false;
+                                            
+                                            if (!userProgress?.id) return (
+                                              <Badge variant="outline" className="text-[9px] h-6 text-muted-foreground/50 border-muted-foreground/10 italic font-medium px-2">
+                                                Not Assigned
+                                              </Badge>
+                                            );
+                                            
+                                            return (
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className={`h-7 px-2 gap-1.5 text-[9px] font-bold uppercase tracking-wider transition-all ${
+                                                  isFinished 
+                                                    ? 'bg-green-500/10 text-green-500 hover:bg-green-500/15 border border-green-500/20' 
+                                                    : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border/50'
+                                                }`}
+                                                onClick={async (e) => {
+                                                  e.stopPropagation();
+                                                  try {
+                                                    await updateMemberProgress.mutateAsync({
+                                                      id: userProgress.id,
+                                                      data: { is_finished: !isFinished }
+                                                    });
+                                                    
+                                                    toast({
+                                                      title: isFinished ? 'Marked as incomplete' : 'Marked as complete',
+                                                      description: isFinished ? 'Keep working on it!' : 'Great job!',
+                                                    });
+                                                  } catch (error) {
+                                                    toast({
+                                                      title: 'Failed to update progress',
+                                                      variant: 'destructive',
+                                                    });
+                                                  }
+                                                }}
+                                              >
+                                                {isFinished ? (
+                                                  <>
+                                                    <CheckSquare className="w-3 h-3" />
+                                                    Finished
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Square className="w-3 h-3" />
+                                                    Mark Done
+                                                  </>
+                                                )}
+                                              </Button>
+                                            );
+                                          })()}
+                                        </div>
                                       )}
                                       </div>
 

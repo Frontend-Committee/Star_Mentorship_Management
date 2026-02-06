@@ -439,7 +439,7 @@ export interface Achievement {
   earnedAt: string;
 }
 
-export interface MemberProgress {
+export interface MemberProgressStats {
   userId: string;
   completedWeeks: number;
   totalWeeks: number;
