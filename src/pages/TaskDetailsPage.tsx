@@ -43,8 +43,11 @@ export default function TaskDetailsPage() {
   const isTaskLoading = isAdmin ? isAdminTaskLoading : isMemberTaskLoading;
 
   // Submissions Data
-  const { data: adminSubmissions, isLoading: isAdminSubsLoading } = useAdminTaskSubmissions(taskId, { enabled: isAdmin });
-  const { data: memberSubmissions, isLoading: isMemberSubsLoading } = useMemberSubmissions(undefined, { enabled: !isAdmin });
+  const { data: adminSubmissionsResponse, isLoading: isAdminSubsLoading } = useAdminTaskSubmissions(taskId, { enabled: isAdmin });
+  const adminSubmissions = adminSubmissionsResponse || []; // useAdminTaskSubmissions already returns results array
+  
+  const { data: memberSubmissionsResponse, isLoading: isMemberSubsLoading } = useMemberSubmissions(undefined, { enabled: !isAdmin });
+  const memberSubmissions = memberSubmissionsResponse?.results || [];
 
   // For member, find their specific submission for this task
   const mySubmission = !isAdmin && memberSubmissions
@@ -132,7 +135,7 @@ export default function TaskDetailsPage() {
 
   const handleFeedbackSubmit = (data: FeedbackCreatePayload) => {
     if (selectedSubmission?.feedback) {
-      updateFeedback({ id: selectedSubmission.feedback.id, data }, {
+      updateFeedback({ id: selectedSubmission.feedback.id, data, usePut: true }, {
         onSuccess: () => {
           toast.success("Feedback updated");
           setIsFeedbackDialogOpen(false);

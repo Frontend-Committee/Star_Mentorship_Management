@@ -14,13 +14,16 @@ export const useSubmissions = (params?: { page?: number } | { enabled?: boolean 
       
       // Handle DRF pagination
       if (data && typeof data === 'object' && 'results' in data) {
-        return (data as PaginatedResponse<MemberSubmission>).results || [];
+        return data as PaginatedResponse<MemberSubmission>;
       }
       
       if (Array.isArray(data)) {
-        return data as MemberSubmission[];
+        return {
+          results: data as MemberSubmission[],
+          count: data.length
+        } as PaginatedResponse<MemberSubmission>;
       }
-      return [] as MemberSubmission[];
+      return { results: [], count: 0 } as PaginatedResponse<MemberSubmission>;
     },
     enabled: actualOptions?.enabled ?? true,
   });

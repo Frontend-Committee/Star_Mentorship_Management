@@ -12,7 +12,7 @@ import { useSubmissions } from '@/features/submissions/hooks';
 import { SubmissionSkeleton } from '@/components/submissions/SubmissionSkeleton';
 import { toast } from 'sonner';
 
-const statusConfig: Record<string, { label: string; icon: React.FC<any>; color: string }> = {
+const statusConfig: Record<string, { label: string; icon: React.FC<{ className?: string }>; color: string }> = {
   pending: { label: 'Pending', icon: Clock, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   submitted: { label: 'Submitted', icon: AlertCircle, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
   reviewed: { label: 'Reviewed', icon: CheckCircle, color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
@@ -22,9 +22,10 @@ export default function Projects() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   
-  const { data: adminTasks = [], isLoading: isLoadingAdmin } = useAdminTasks(undefined, { enabled: isAdmin });
-  const { data: memberTasks = [], isLoading: isLoadingMember } = useMemberTasks(undefined, { enabled: !isAdmin });
-  const { data: submissions = [], isLoading: isLoadingSubs } = useSubmissions(undefined, { enabled: !isAdmin });
+  const { data: adminTasksResponse, isLoading: isLoadingAdmin } = useAdminTasks(undefined, { enabled: isAdmin });
+  const { data: memberTasksResponse, isLoading: isLoadingMember } = useMemberTasks(undefined, { enabled: !isAdmin });
+  const { data: submissionsResponse, isLoading: isLoadingSubs } = useSubmissions(undefined, { enabled: !isAdmin });
+  
   const createTask = useCreateTask();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -33,10 +34,13 @@ export default function Projects() {
   const isLoading = isAdmin ? isLoadingAdmin : (isLoadingMember || isLoadingSubs);
 
   const projects = useMemo<Project[]>(() => {
+    const adminTasks = adminTasksResponse?.results || [];
+    const memberTasks = memberTasksResponse?.results || [];
+    const submissions = submissionsResponse?.results || [];
     const baseTasks = isAdmin ? adminTasks : memberTasks;
     
     return baseTasks.map(task => {
-      const submission = submissions.find(s => s.task.id === task.id);
+      const submission = submissions.find(s => (typeof s.task === 'number' ? s.task : s.task.id) === task.id);
       
       let status: 'pending' | 'submitted' | 'reviewed' = 'pending';
       if (submission) {
@@ -52,7 +56,7 @@ export default function Projects() {
         feedback: submission?.feedback?.note,
       };
     });
-  }, [isAdmin, adminTasks, memberTasks, submissions]);
+  }, [isAdmin, adminTasksResponse?.results, memberTasksResponse?.results, submissionsResponse?.results]);
 
   const handleAddProject = async (newProject: { title: string; description: string }) => {
     try {

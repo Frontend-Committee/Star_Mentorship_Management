@@ -11,13 +11,13 @@ export default function Feedback() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   
-  const { data: memberSubmissions = [], isLoading: isMemberLoading } = useSubmissions(undefined, { enabled: !isAdmin });
-  const { data: adminSubmissions = [], isLoading: isAdminLoading } = useAdminSubmissions(undefined, { enabled: isAdmin });
+  const { data: memberSubmissionsResponse, isLoading: isMemberLoading } = useSubmissions(undefined, { enabled: !isAdmin });
+  const { data: adminSubmissionsResponse, isLoading: isAdminLoading } = useAdminSubmissions(undefined, { enabled: isAdmin });
 
-  const submissions = isAdmin ? adminSubmissions : memberSubmissions;
   const isLoading = isAdmin ? isAdminLoading : isMemberLoading;
 
   const stats = useMemo(() => {
+    const submissions = isAdmin ? (adminSubmissionsResponse?.results || []) : (memberSubmissionsResponse?.results || []);
     const reviewed = submissions.filter((p) => p.feedback !== null);
     const pending = submissions.filter((p) => {
       const s = p.status?.toLowerCase();
@@ -28,7 +28,7 @@ export default function Feedback() {
       reviewed,
       pending
     };
-  }, [submissions]);
+  }, [isAdmin, adminSubmissionsResponse?.results, memberSubmissionsResponse?.results]);
 
   if (isLoading) {
     return <SubmissionSkeleton />;
@@ -99,11 +99,11 @@ export default function Feedback() {
                           ? submission.task?.title 
                           : `Task #${submission.task}`}
                       </h4>
-                      {isAdmin && 'user' in submission && (
-                        <p className="text-xs text-primary font-medium">
-                          Member: {(submission as any).user?.first_name} {(submission as any).user?.last_name}
-                        </p>
-                      )}
+                  {isAdmin && 'user' in submission && typeof submission.user === 'object' && submission.user && (
+                    <p className="text-xs text-primary font-medium">
+                      Member: {submission.user.first_name} {submission.user.last_name}
+                    </p>
+                  )}
                       <p className="text-sm text-muted-foreground">
                         Submitted on {submission.submitted_at && new Date(submission.submitted_at).toLocaleDateString()}
                       </p>

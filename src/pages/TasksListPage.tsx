@@ -14,13 +14,13 @@ export default function TasksListPage() {
   const isAdmin = user?.role === 'admin';
   
   // Fetch tasks based on role
-  const { data: adminTasks, isLoading: isAdminLoading } = useAdminTasks(undefined, { enabled: isAdmin });
-  const { data: memberTasks, isLoading: isMemberTasksLoading } = useMemberTasks(undefined, { enabled: !isAdmin && !!user });
+  const { data: adminTasksResponse, isLoading: isAdminLoading } = useAdminTasks(undefined, { enabled: isAdmin });
+  const { data: memberTasksResponse, isLoading: isMemberTasksLoading } = useMemberTasks(undefined, { enabled: !isAdmin && !!user });
   
   const tasks = useMemo(() => {
-    const rawTasks = (isAdmin ? adminTasks : memberTasks) || [];
+    const rawTasks = (isAdmin ? adminTasksResponse?.results : memberTasksResponse?.results) || [];
     return [...rawTasks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [isAdmin, adminTasks, memberTasks]);
+  }, [isAdmin, adminTasksResponse?.results, memberTasksResponse?.results]);
   
   const isLoading = isAdmin ? isAdminLoading : isMemberTasksLoading;
 

@@ -43,11 +43,12 @@ export default function Dashboard() {
   const { data: membersResponse, isLoading: isLoadingUsers } = useMembersWithProgress({ enabled: isAdmin });
   const users = useMemo(() => membersResponse?.results || [], [membersResponse]);
   const { data: adminSessions = [], isLoading: isLoadingSess } = useAdminSessions(committeeSlug, { enabled: isAdmin });
-  const { data: adminTasks = [], isLoading: isLoadingTasks } = useAdminTasks(undefined, { enabled: isAdmin });
-  const { data: adminSubmissions = [], isLoading: isLoadingSubmissions } = useAdminSubmissions(undefined, { enabled: isAdmin });
+  const { data: adminTasksResponse, isLoading: isLoadingTasks } = useAdminTasks(undefined, { enabled: isAdmin });
+  const { data: adminSubmissionsResponse, isLoading: isLoadingSubmissions } = useAdminSubmissions(undefined, { enabled: isAdmin });
  
-  const { data: memberTasks = [], isLoading: isLoadingMTasks } = useMemberTasks(undefined, { enabled: !isAdmin });
-  const { data: memberSubmissions = [], isLoading: isLoadingMSubs } = useSubmissions(undefined, { enabled: !isAdmin });
+  const { data: memberTasksResponse, isLoading: isLoadingMTasks } = useMemberTasks(undefined, { enabled: !isAdmin });
+  const { data: memberSubmissionsResponse, isLoading: isLoadingMSubs } = useSubmissions(undefined, { enabled: !isAdmin });
+
   const { data: apiWeeks = [], isLoading: isLoadingWeeks } = useWeeks(user?.role);
   const { data: announcements = [], isLoading: isLoadingAnnouncements } = useAnnouncements();
 
@@ -58,8 +59,13 @@ export default function Dashboard() {
   const adminStats = useMemo(() => {
     if (!isAdmin) return null;
 
+    const users = membersResponse?.results || [];
     const totalMembers = membersResponse?.count || users.length;
-    const activeTasks = adminTasks.length;
+    const adminTasks = adminTasksResponse?.results || [];
+    const adminSubmissions = adminSubmissionsResponse?.results || [];
+    
+    const activeTasksCount = adminTasksResponse?.count || adminTasks.length;
+    const totalSubmissionsCount = adminSubmissionsResponse?.count || adminSubmissions.length;
 
     // Calculate Member Progress for List
     const memberProgressList = users.map(member => {
@@ -71,10 +77,11 @@ export default function Dashboard() {
 
     return {
       totalMembers,
-      activeTasks,
+      activeTasks: activeTasksCount,
+      totalSubmissions: totalSubmissionsCount,
       memberProgressList
     };
-  }, [isAdmin, users, adminTasks, membersResponse?.count]);
+  }, [isAdmin, membersResponse, adminTasksResponse, adminSubmissionsResponse]);
 
   // Transform API weeks to UI format
   const weeks = useMemo<WeekContent[]>(() => {
@@ -124,21 +131,26 @@ export default function Dashboard() {
   const memberStats = useMemo(() => {
     if (isAdmin) return null;
 
-    const submittedCount = memberSubmissions.length;
+    const memberTasks = memberTasksResponse?.results || [];
+    const memberSubmissions = memberSubmissionsResponse?.results || [];
+
+    const submittedCount = memberSubmissionsResponse?.count || memberSubmissions.length;
+    const totalTasksCount = memberTasksResponse?.count || memberTasks.length;
 
     const completedWeeksCount = weeks.filter(w => w.isCompleted).length;
-    const totalWeeksCount = weeks.length;
-    const curriculumProgress = totalWeeksCount > 0 
-      ? Math.round((completedWeeksCount / totalWeeksCount) * 100) 
+    const totalWeeksInCourse = weeks.length;
+    const curriculumProgress = totalWeeksInCourse > 0 
+      ? Math.round((completedWeeksCount / totalWeeksInCourse) * 100) 
       : 0;
 
     return {
       submittedCount,
+      totalTasksCount,
       completedWeeks: completedWeeksCount,
-      totalWeeksCount,
+      totalWeeksInCourse,
       curriculumProgress
     };
-  }, [isAdmin, memberSubmissions, weeks]);
+  }, [isAdmin, memberSubmissionsResponse, memberTasksResponse, weeks]);
 
   const currentWeek = useMemo(() => {
     if (weeks.length === 0) return null;
@@ -175,7 +187,7 @@ export default function Dashboard() {
               trend={{ value: users.length > 0 ? 100 : 0, isPositive: true }}
             />
             <StatCard
-              title="Content Published"
+              title="Content"
               value={`${weeks.length} Weeks`}
               icon={BookOpen}
             />
@@ -190,13 +202,13 @@ export default function Dashboard() {
           <>
             <StatCard
               title="Assigned Tasks"
-              value={memberTasks.length}
+              value={memberStats?.totalTasksCount || 0}
               icon={LayoutList}
               className="col-span-1"
             />
             <StatCard
               title="Weeks"
-              value={`${memberStats?.completedWeeks || 0}/${memberStats?.totalWeeksCount || 0}`}
+              value={`${memberStats?.completedWeeks || 0}/${memberStats?.totalWeeksInCourse || 0}`}
               icon={BookOpen}
               className="col-span-1"
             />
@@ -267,9 +279,14 @@ export default function Dashboard() {
                           <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                             {member.first_name} {member.last_name}
                           </p>
-                          <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors">
-                            {member.progress}%
-                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] font-bold text-accent uppercase tracking-tighter bg-accent/5 px-1.5 py-0.5 rounded-md border border-accent/10">
+                              {member.tasks_submitted || member.submitted_tasks || 0} Tasks
+                            </span>
+                            <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors">
+                              {member.progress}%
+                            </span>
+                          </div>
                         </div>
                         <div className="h-1.5 w-full bg-muted/80 rounded-full overflow-hidden">
                           <div 

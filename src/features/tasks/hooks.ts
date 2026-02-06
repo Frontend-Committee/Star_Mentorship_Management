@@ -22,12 +22,15 @@ export const useAdminTasks = (params?: { page?: number } | { enabled?: boolean }
       const response = await api.get<PaginatedResponse<Task> | Task[]>('admin/tasks/', { params: actualParams });
       const data = response.data;
       if (data && typeof data === 'object' && 'results' in data) {
-        return (data as PaginatedResponse<Task>).results || [];
+        return data as PaginatedResponse<Task>;
       }
       if (Array.isArray(data)) {
-        return data as Task[];
+        return {
+          results: data as Task[],
+          count: data.length
+        } as PaginatedResponse<Task>;
       }
-      return [] as Task[];
+      return { results: [], count: 0 } as PaginatedResponse<Task>;
     },
     enabled: actualOptions?.enabled ?? true,
   });
@@ -124,12 +127,15 @@ export const useAdminSubmissions = (params?: { page?: number } | { enabled?: boo
       const response = await api.get<PaginatedResponse<TaskSubmissionDetail> | TaskSubmissionDetail[]>('admin/submissions/', { params: actualParams });
       const data = response.data;
       if (data && typeof data === 'object' && 'results' in data) {
-        return (data as PaginatedResponse<TaskSubmissionDetail>).results || [];
+        return data as PaginatedResponse<TaskSubmissionDetail>;
       }
       if (Array.isArray(data)) {
-        return data as TaskSubmissionDetail[];
+        return {
+          results: data as TaskSubmissionDetail[],
+          count: data.length
+        } as PaginatedResponse<TaskSubmissionDetail>;
       }
-      return [] as TaskSubmissionDetail[];
+      return { results: [], count: 0 } as PaginatedResponse<TaskSubmissionDetail>;
     },
     enabled: actualOptions?.enabled ?? true,
   });
@@ -174,8 +180,9 @@ export const useCreateFeedback = () => {
 export const useUpdateFeedback = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<FeedbackCreatePayload> }) => {
-      const response = await api.patch<Feedback>(`admin/feedback/${id}/`, data);
+    mutationFn: async ({ id, data, usePut = false }: { id: number; data: Partial<FeedbackCreatePayload> & { task_sub?: number }; usePut?: boolean }) => {
+      const method = usePut ? 'put' : 'patch';
+      const response = await api[method]<Feedback>(`admin/feedback/${id}/`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -219,12 +226,15 @@ export const useMemberTasks = (params?: { page?: number } | { enabled?: boolean 
       const response = await api.get<PaginatedResponse<Task> | Task[]>('member/tasks/', { params: actualParams });
       const data = response.data;
       if (data && typeof data === 'object' && 'results' in data) {
-        return (data as PaginatedResponse<Task>).results || [];
+        return data as PaginatedResponse<Task>;
       }
       if (Array.isArray(data)) {
-        return data as Task[];
+        return {
+          results: data as Task[],
+          count: data.length
+        } as PaginatedResponse<Task>;
       }
-      return [] as Task[];
+      return { results: [], count: 0 } as PaginatedResponse<Task>;
     },
     enabled: actualOptions?.enabled ?? true,
   });
