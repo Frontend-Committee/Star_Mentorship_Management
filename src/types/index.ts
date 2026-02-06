@@ -48,6 +48,9 @@ export interface MemberWithProgress {
   created_at?: string;
   session_attendance?: number;
   week_progress?: number;
+  progress?: number;
+  tasks_submitted?: number;
+  submitted_tasks?: number;
   [property: string]: unknown;
 }
 

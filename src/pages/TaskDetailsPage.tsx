@@ -359,7 +359,9 @@ export default function TaskDetailsPage() {
             <CardHeader>
               <CardTitle>Your Submission</CardTitle>
               <CardDescription>
-                Submit your work for this task.
+                {mySubmission && ['submitted', 'sub', 'reviewed'].includes(String(mySubmission.status).toLowerCase())
+                  ? 'Manage or update your submitted work for this task.' 
+                  : 'Submit your work and any relevant notes for this task.'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -401,41 +403,71 @@ export default function TaskDetailsPage() {
                   </Button>
                 </div>
               ) : (
-                <form onSubmit={handleMemberSubmit} className="space-y-4">
+                <form onSubmit={handleMemberSubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="url">Project URL</Label>
+                    <Label htmlFor="url" className="text-sm font-semibold">Project URL</Label>
                     <Input
                       id="url"
                       placeholder="https://github.com/..."
                       value={submissionUrl}
                       onChange={(e) => setSubmissionUrl(e.target.value)}
                       required
+                      className="bg-background"
                     />
+                    <div className="bg-primary/5 p-2.5 rounded-md border border-primary/10 flex items-start gap-2">
+                      <div className="mt-0.5 text-primary">
+                      <ExternalLink className="w-3 h-3" />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        <span className="font-bold text-primary mr-1 uppercase text-[9px]">Instructions:</span>
+                         Please provide a GitHub repo, Google Drive folder (public access required), or a live project URL.
+                      </p>
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="note">Notes</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="note" className="text-sm font-semibold">Notes</Label>
+                      {submissionNote && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setSubmissionNote('')}
+                          className="h-6 px-2 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10 font-bold uppercase transition-all"
+                        >
+                          Clear Notes
+                        </Button>
+                      )}
+                    </div>
                     <Textarea
                       id="note"
                       placeholder="Any comments for the reviewer..."
                       value={submissionNote}
                       onChange={(e) => setSubmissionNote(e.target.value)}
-                      rows={3}
+                      rows={4}
+                      className="bg-background resize-none"
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3 pt-2">
                     {isEditing && (
                       <Button 
                         type="button" 
                         variant="ghost" 
-                        className="flex-1" 
+                        className="flex-1 font-bold uppercase text-xs tracking-wider" 
                         onClick={() => setIsEditing(false)}
                       >
                         Cancel
                       </Button>
                     )}
-                    <Button type="submit" className="flex-[2]" disabled={isSubmitting || isUpdatingSub}>
+                    <Button 
+                      type="submit" 
+                      className="flex-[2] font-bold uppercase text-xs tracking-wider" 
+                      disabled={isSubmitting || isUpdatingSub}
+                    >
                       {(isSubmitting || isUpdatingSub) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      {mySubmission ? 'Update Work' : 'Submit Work'}
+                      {mySubmission && ['submitted', 'sub', 'reviewed'].includes(String(mySubmission.status).toLowerCase()) 
+                        ? 'Update Work' 
+                        : 'Submit Work'}
                     </Button>
                   </div>
                 </form>
