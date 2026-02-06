@@ -302,6 +302,7 @@ export default function TaskDetailsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openFeedbackDialog(sub)}
+                                disabled={!['SUBMITTED', 'submitted', 'sub', 'reviewed', 'REVIEWED'].includes(sub.status)}
                                 className="h-8 px-2 text-[9px] sm:text-[10px] font-bold uppercase"
                               >
                                 {sub.feedback ? 'Edit' : 'Grade'}
