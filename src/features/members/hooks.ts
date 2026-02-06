@@ -43,8 +43,15 @@ export const useCommitteeMembers = (options?: { enabled?: boolean }) => {
         }
         pageCount++;
       }
-      return allResults;
+      // Deduplicate by ID
+      const seen = new Set();
+      return allResults.filter(member => {
+        if (!member.id || seen.has(member.id)) return false;
+        seen.add(member.id);
+        return true;
+      });
     },
+
     enabled: options?.enabled ?? true,
   });
 };
@@ -149,6 +156,63 @@ export const useDeleteMember = () => {
       // Invalidate and refetch members list
       queryClient.invalidateQueries({ queryKey: ['members-with-progress'] });
       queryClient.invalidateQueries({ queryKey: ['committee-members'] });
+    },
+  });
+};
+
+export const useCommitteeGroups = (options?: { enabled?: boolean }) => {
+  return useQuery({
+    queryKey: ['committee-groups'],
+    queryFn: async () => {
+      const response = await api.get<PaginatedResponse<import('@/types').CommitteeGroup> | import('@/types').CommitteeGroup[]>('admin/groups/');
+      const data = response.data;
+      if (Array.isArray(data)) return data as import('@/types').CommitteeGroup[];
+      if (data && typeof data === 'object' && 'results' in data) {
+        return data.results as import('@/types').CommitteeGroup[];
+      }
+      return [] as import('@/types').CommitteeGroup[];
+    },
+    enabled: options?.enabled ?? true,
+  });
+};
+
+export const useCreateCommitteeGroup = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (payload: import('@/types').CommitteeGroupCreatePayload) => {
+      const response = await api.post<import('@/types').CommitteeGroup>('admin/groups/', payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['committee-groups'] });
+    },
+  });
+};
+
+export const useUpdateCommitteeGroup = (id: number) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (payload: import('@/types').CommitteeGroupCreatePayload) => {
+      const response = await api.put<import('@/types').CommitteeGroup>(`admin/groups/${id}/`, payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['committee-groups'] });
+    },
+  });
+};
+
+export const useDeleteCommitteeGroup = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`admin/groups/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['committee-groups'] });
     },
   });
 };

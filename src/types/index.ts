@@ -442,3 +442,16 @@ export interface MemberProgressStats {
   projectsSubmitted: number;
   achievements: Achievement[];
 }
+
+export interface CommitteeGroup {
+  id: number;
+  name: string;
+  users: User[];
+}
+
+export interface CommitteeGroupCreatePayload {
+  name: string;
+  users: number[]; // Sending IDs is usually safer/expected unless it's a nested creation
+}
+
+

@@ -1,4 +1,7 @@
 import { AddMemberDialog } from '@/components/dialogs/AddMemberDialog';
+import { AddGroupDialog } from '@/components/dialogs/AddGroupDialog';
+import { EditGroupDialog } from '@/components/dialogs/EditGroupDialog';
+import { DeleteConfirmationDialog } from '@/components/dialogs/DeleteConfirmationDialog';
 import { MemberProfileDialog } from '@/components/dialogs/MemberProfileDialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -7,10 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
-import { useMembersWithProgress, useDeleteMember, useCommitteeMembers } from '@/features/members/hooks';
+import { useMembersWithProgress, useDeleteMember, useCommitteeMembers, useCommitteeGroups, useDeleteCommitteeGroup } from '@/features/members/hooks';
 import { toast } from '@/hooks/use-toast';
 import { Member, MemberMinimal } from '@/types';
-import { Crown, Eye, Loader2, Mail, Search, TrendingUp, Shield, Users as UsersIcon, ChevronRight } from 'lucide-react';
+import { Crown, Eye, Loader2, Mail, Search, TrendingUp, Shield, Users as UsersIcon, ChevronRight, LayoutGrid, Settings2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,6 +25,10 @@ export default function Members() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<import('@/types').CommitteeGroup | null>(null);
+  const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
+  const [isDeleteGroupOpen, setIsDeleteGroupOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<import('@/types').CommitteeGroup | null>(null);
 
   // Debounce search query
   useEffect(() => {
@@ -34,10 +41,11 @@ export default function Members() {
   // Use real data from API for mentees
   const { data: response, isLoading, error } = useMembersWithProgress({ search: debouncedSearchQuery, enabled: isAdmin });
   
-  // Use committee-specific endpoint for committee list
-  const { data: committeeData, isLoading: isLoadingCommittee } = useCommitteeMembers({ enabled: isAdmin });
+  // Use groups endpoint
+  const { data: groupsData, isLoading: isLoadingGroups } = useCommitteeGroups({ enabled: isAdmin });
 
   const deleteMemberMutation = useDeleteMember();
+  const deleteGroupMutation = useDeleteCommitteeGroup();
 
   // Transform API users to Member type
   const members: Member[] = useMemo(() => {
@@ -57,23 +65,6 @@ export default function Members() {
     });
   }, [response]);
 
-  // Transform Committee data
-  const committeeMembers: Member[] = useMemo(() => {
-    const apiUsers = committeeData || [];
-    return apiUsers.map((u: MemberMinimal) => {
-      const actualId = u.id;
-      return {
-        id: actualId ? actualId.toString() : Math.random().toString(),
-        name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Anonymous Member',
-        email: u.email || 'No email provided',
-        progress: 0, // Committee doesn't have student progress
-        attendance: 0,
-        isBest: false,
-        tasksSubmitted: 0,
-      };
-    });
-  }, [committeeData]);
-  
   const handleToggleBestMember = (id: string) => {
     // This functionality requires an API endpoint to update "isBest" status
     // For now, we'll just show a toast that it's not implemented yet
@@ -136,6 +127,33 @@ export default function Members() {
     });
   };
 
+  const handleDeleteGroup = (group: import('@/types').CommitteeGroup) => {
+    setGroupToDelete(group);
+    setIsDeleteGroupOpen(true);
+  };
+
+  const confirmDeleteGroup = () => {
+    if (!groupToDelete) return;
+
+    deleteGroupMutation.mutate(groupToDelete.id, {
+      onSuccess: () => {
+        setIsDeleteGroupOpen(false);
+        setGroupToDelete(null);
+        toast({
+          title: "Success",
+          description: "Group deleted successfully.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to delete group.",
+          variant: "destructive"
+        });
+      }
+    });
+  };
+
   const filteredMentees = useMemo(() => {
     return members.filter(
       (member) =>
@@ -143,14 +161,6 @@ export default function Members() {
         member.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [members, searchQuery]);
-
-  const filteredCommittee = useMemo(() => {
-    return committeeMembers.filter(
-      (member) =>
-        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [committeeMembers, searchQuery]);
 
   const bestMember = members.find((m) => m.isBest);
 
@@ -197,7 +207,12 @@ export default function Members() {
               </div>
             )}
           </div>
-          {isAdmin && <AddMemberDialog onSuccess={() => { }} />}
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              <AddGroupDialog />
+              <AddMemberDialog onSuccess={() => { }} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -207,9 +222,9 @@ export default function Members() {
             <TrendingUp className="w-4 h-4" />
             Participants
           </TabsTrigger>
-          <TabsTrigger value="committee" className="flex items-center gap-2">
-            <UsersIcon className="w-4 h-4" />
-            Committee
+          <TabsTrigger value="groups" className="flex items-center gap-2">
+            <LayoutGrid className="w-4 h-4" />
+            Groups
           </TabsTrigger>
         </TabsList>
 
@@ -251,21 +266,88 @@ export default function Members() {
           </div>
         </TabsContent>
 
-        <TabsContent value="committee" className="space-y-6">
-          {/* Members Grid - Committee */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {isLoadingCommittee ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="h-48 animate-pulse bg-muted" />
+
+        <TabsContent value="groups" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {isLoadingGroups ? (
+              Array.from({ length: 2 }).map((_, i) => (
+                <Card key={i} className="h-64 animate-pulse bg-muted" />
               ))
-            ) : committeeMembers.length === 0 ? (
+            ) : !groupsData || groupsData.length === 0 ? (
               <EmptyState type="committee" />
-            ) : filteredCommittee.length > 0 ? (
-              filteredCommittee.map((member, index) => (
-                <MemberCard key={member.id} member={member} index={index} onAction={() => handleViewProfile(member)} isAdmin={isAdmin} />
-              ))
             ) : (
-              <EmptyState query={searchQuery} onClear={() => setSearchQuery('')} />
+              groupsData.map((group) => (
+                <Card key={group.id} className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
+                  <CardContent className="p-0">
+                    <div className="bg-primary/5 p-4 border-b border-border/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                            <UsersIcon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg">{group.name}</h3>
+                            <p className="text-xs text-muted-foreground">{group.users?.length || 0} Members assigned</p>
+                          </div>
+                        </div>
+                        {isAdmin && (
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 hover:bg-primary/20 text-primary"
+                              onClick={() => {
+                                setSelectedGroup(group);
+                                setIsEditGroupOpen(true);
+                              }}
+                            >
+                              <Settings2 className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 hover:bg-destructive/10 text-destructive"
+                              onClick={() => handleDeleteGroup(group)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {group.users?.map((user) => (
+                          <div 
+                            key={user.id} 
+                            className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/5 group hover:bg-white/5 transition-all duration-300"
+                          >
+                            <Avatar className="w-10 h-10 border border-background shadow-sm">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                                {user.first_name?.[0]}{user.last_name?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">
+                                {user.first_name} {user.last_name}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground truncate font-medium flex items-center gap-1">
+                                <Mail className="w-2.5 h-2.5 opacity-60" />
+                                {user.email}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {(!group.users || group.users.length === 0) && (
+                        <div className="py-8 text-center text-muted-foreground text-sm">
+                          No members in this group
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
             )}
           </div>
         </TabsContent>
@@ -282,6 +364,21 @@ export default function Members() {
           isAdmin={isAdmin}
         />
       )}
+      {selectedGroup && (
+        <EditGroupDialog
+          group={selectedGroup}
+          open={isEditGroupOpen}
+          onOpenChange={setIsEditGroupOpen}
+        />
+      )}
+      <DeleteConfirmationDialog
+        open={isDeleteGroupOpen}
+        onOpenChange={setIsDeleteGroupOpen}
+        onConfirm={confirmDeleteGroup}
+        isLoading={deleteGroupMutation.isPending}
+        title="Delete Group"
+        description={`Are you sure you want to delete the group "${groupToDelete?.name}"? This action cannot be undone.`}
+      />
     </div>
   );
 }
