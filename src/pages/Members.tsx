@@ -62,8 +62,27 @@ export default function Members() {
         isBest: false,
         tasksSubmitted: 0,
       };
-    });
+    }).sort((a, b) => a.name.localeCompare(b.name));
   }, [response]);
+
+  // Map member IDs to group names
+  const memberGroupMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (groupsData) {
+      groupsData.forEach(g => {
+        if (g.users) {
+          g.users.forEach((u: any) => {
+            // Handle both object and ID formats
+            const id = typeof u === 'object' ? u.id : u;
+            if (id) {
+               map.set(id.toString(), g.name);
+            }
+          });
+        }
+      });
+    }
+    return map;
+  }, [groupsData]);
 
   const handleToggleBestMember = (id: string) => {
     // This functionality requires an API endpoint to update "isBest" status
@@ -258,7 +277,15 @@ export default function Members() {
               <EmptyState type="participants" />
             ) : filteredMentees.length > 0 ? (
               filteredMentees.map((member, index) => (
-                <MemberCard key={member.id} member={member} index={index} onAction={() => handleViewProfile(member)} showProgress isAdmin={isAdmin} />
+                <MemberCard 
+                  key={member.id} 
+                  member={member} 
+                  index={index} 
+                  onAction={() => handleViewProfile(member)} 
+                  showProgress 
+                  isAdmin={isAdmin}
+                  groupName={memberGroupMap.get(member.id)}
+                />
               ))
             ) : (
               <EmptyState query={searchQuery} onClear={() => setSearchQuery('')} />
@@ -355,12 +382,13 @@ export default function Members() {
 
 // --- Sub-components to keep Members readable ---
 
-function MemberCard({ member, index, onAction, showProgress = false, isAdmin }: { 
+function MemberCard({ member, index, onAction, showProgress = false, isAdmin, groupName }: { 
   member: Member; 
   index: number; 
   onAction: () => void;
   showProgress?: boolean;
   isAdmin: boolean;
+  groupName?: string;
 }) {
   return (
     <Card
@@ -400,9 +428,16 @@ function MemberCard({ member, index, onAction, showProgress = false, isAdmin }: 
         </div>
 
         <div className="space-y-1">
-          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors truncate">
-            {member.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors truncate">
+              {member.name}
+            </h3>
+            {groupName && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20 whitespace-nowrap">
+                {groupName}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
             <Mail className="w-3 h-3 opacity-60" />
             <span className="truncate opacity-80">{member.email}</span>

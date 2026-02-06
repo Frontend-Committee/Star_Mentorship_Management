@@ -28,7 +28,7 @@ export function EditGroupDialog({ group, open, onOpenChange, onSuccess }: EditGr
   const [name, setName] = useState(group.name);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<number[]>(
-    group.users.map(u => u.id).filter((id): id is number => id !== undefined)
+    group.users?.map((u: any) => (typeof u === 'number' ? u : u.id)).filter((id: any): id is number => !!id) || []
   );
 
   const { data: members, isLoading: isLoadingMembers } = useCommitteeMembers();
@@ -41,8 +41,9 @@ export function EditGroupDialog({ group, open, onOpenChange, onSuccess }: EditGr
     groups.forEach(g => {
       // Don't show the current group as an assignment conflict
       if (g.id === group.id) return;
-      g.users?.forEach(u => {
-        if (u.id) mapping.set(u.id, g.name);
+      g.users?.forEach((u: any) => {
+        const id = typeof u === 'number' ? u : u.id;
+        if (id) mapping.set(id, g.name);
       });
     });
     return mapping;
@@ -52,7 +53,10 @@ export function EditGroupDialog({ group, open, onOpenChange, onSuccess }: EditGr
   useEffect(() => {
     if (open) {
       setName(group.name);
-      setSelectedUsers(group.users.map(u => u.id).filter((id): id is number => id !== undefined));
+      // Handle both full user objects and plain IDs in group.users
+      const existingIds = group.users?.map((u: any) => (typeof u === 'number' ? u : u.id))
+        .filter((id: any): id is number => !!id) || [];
+      setSelectedUsers(existingIds);
     }
   }, [group, open]);
 
