@@ -279,7 +279,7 @@ export default function Members() {
               groupsData.map((group) => (
                 <Card key={group.id} className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
                   <CardContent className="p-0">
-                    <div className="bg-primary/5 p-4 border-b border-border/50">
+                    <div className="bg-primary/5 p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -314,36 +314,6 @@ export default function Members() {
                           </div>
                         )}
                       </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {group.users?.map((user) => (
-                          <div 
-                            key={user.id} 
-                            className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/5 group hover:bg-white/5 transition-all duration-300"
-                          >
-                            <Avatar className="w-10 h-10 border border-background shadow-sm">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                                {user.first_name?.[0]}{user.last_name?.[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">
-                                {user.first_name} {user.last_name}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground truncate font-medium flex items-center gap-1">
-                                <Mail className="w-2.5 h-2.5 opacity-60" />
-                                {user.email}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {(!group.users || group.users.length === 0) && (
-                        <div className="py-8 text-center text-muted-foreground text-sm">
-                          No members in this group
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
