@@ -10,8 +10,7 @@ import {
   useCreateSession,
   useDeleteSession,
   useMemberSessions,
-  useUpdateSession,
-  getCommitteeSlug
+  useUpdateSession
 } from '@/features/sessions/hooks';
 import { useCommitteeDetails } from '@/features/committees/hooks';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +32,7 @@ export default function Sessions() {
   const { toast } = useToast();
 
   const { data: committee } = useCommitteeDetails();
-  const committeeSlug = getCommitteeSlug(committee?.name);
+  const committeeSlug = committee?.reference_id || 'front_committee';
   const referenceId = committee?.reference_id;
 
   const { data: adminSessions, isLoading: isAdminLoading } = useAdminSessions(committeeSlug, { enabled: isAdmin });
@@ -140,7 +139,7 @@ export default function Sessions() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center h-64 text-center">
             <CalendarDays className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">No Sessions Found</h3>
+            <h3 className="text-lg font-semibold">Sessions are empty</h3>
             <p className="text-muted-foreground max-w-sm mt-2">
               There are no sessions scheduled yet.
             </p>

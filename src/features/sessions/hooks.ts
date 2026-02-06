@@ -6,38 +6,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // --- Admin Hooks ---
 
-// Helper to map committee/role name to API slug
-type CommitteeSlug =
-  | 'front_committee'
-  | 'back_committee'
-  | 'mobile_committee'
-  | 'ai_committee'
-  | 'uiux_committee'
-  | 'data_analysis_committee';
-
-const COMMITTEE_MAP: { keywords: string[]; slug: CommitteeSlug }[] = [
-  { keywords: ['backend', 'back-end'], slug: 'back_committee' },
-  { keywords: ['mobile'], slug: 'mobile_committee' },
-  { keywords: ['ai', 'artificial intelligence'], slug: 'ai_committee' },
-  { keywords: ['ui', 'ux', 'design'], slug: 'uiux_committee' },
-  { keywords: ['data', 'analysis'], slug: 'data_analysis_committee' },
-];
-
-export const getCommitteeSlug = (name?: string): CommitteeSlug => {
-  if (!name) return 'front_committee';
-
-  const lower = name.toLowerCase();
-
-  for (const committee of COMMITTEE_MAP) {
-    if (committee.keywords.some(k => lower.includes(k))) {
-      return committee.slug;
-    }
-  }
-
-  return 'front_committee';
-};
-// --- Admin Hooks ---
-
 export const useAdminSessions = (committeeSlug?: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['admin-sessions', committeeSlug],
