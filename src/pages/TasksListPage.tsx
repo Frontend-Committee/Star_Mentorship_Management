@@ -39,18 +39,18 @@ export default function TasksListPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground">Tasks</h1>
-          <p className="text-muted-foreground mt-1">
+    <div className="space-y-6 lg:space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground">Tasks</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             {isAdmin 
               ? "Manage committee tasks and assignments." 
               : "View your assigned tasks and submit your work."}
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setIsTaskDialogOpen(true)} className="gap-2 shadow-lg hover:shadow-xl transition-all">
+          <Button onClick={() => setIsTaskDialogOpen(true)} className="w-full sm:w-auto gap-2 shadow-lg hover:shadow-xl transition-all">
             <Plus className="w-4 h-4" />
             Create Task
           </Button>
@@ -63,16 +63,18 @@ export default function TasksListPage() {
         </div>
       ) : tasks.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-            <LayoutList className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">No Tasks Found</h3>
-            <p className="text-muted-foreground max-w-sm mt-2">
+          <CardContent className="flex flex-col items-center justify-center min-h-[300px] text-center p-6">
+            <div className="p-4 rounded-full bg-muted mb-4">
+              <LayoutList className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-bold">No Tasks Found</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mt-2 mb-6">
               {isAdmin 
                 ? "Create a new task to get started." 
                 : "No tasks have been assigned yet."}
             </p>
             {isAdmin && (
-              <Button onClick={() => setIsTaskDialogOpen(true)} className="mt-4 gap-2">
+              <Button onClick={() => setIsTaskDialogOpen(true)} className="gap-2">
                 <Plus className="w-4 h-4" />
                 Create First Task
               </Button>
@@ -80,10 +82,10 @@ export default function TasksListPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {tasks.map((task) => (
-            <Link key={task.id} to={`/tasks/${task.id}`} className="block h-full group">
-              <Card className="h-full hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary/50 group-hover:border-l-primary">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {tasks.map((task, index) => (
+            <Link key={task.id} to={`/tasks/${task.id}`} className="block h-full group animate-scale-in" style={{ animationDelay: `${index * 0.05}s` }}>
+              <Card className="h-full hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 border-l-4 border-l-primary/50 group-hover:border-l-primary rounded-2xl">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start gap-2">
                     <CardTitle className="text-xl font-bold line-clamp-2 group-hover:text-primary transition-colors">

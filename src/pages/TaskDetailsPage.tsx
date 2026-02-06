@@ -160,31 +160,32 @@ export default function TaskDetailsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
-      {/* Task Details Header */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-heading font-bold">{task.title}</h1>
-            <div className="flex items-center gap-4 text-muted-foreground mt-2 text-sm">
-              <span className="flex items-center gap-1">
-                <CalendarDays className="w-4 h-4" />
-                Due: {new Date(task.date).toLocaleDateString()}
-              </span>
+    <div className="space-y-6 lg:space-y-8 animate-fade-in">
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground leading-tight">{task.title}</h1>
+              <div className="flex items-center gap-4 text-muted-foreground text-sm">
+                <span className="flex items-center gap-1.5 font-medium text-primary">
+                  <CalendarDays className="w-4 h-4" />
+                  Due {new Date(task.date).toLocaleDateString()}
+                </span>
+              </div>
             </div>
+            {isAdmin && (
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => setIsTaskDialogOpen(true)} variant="outline" className="flex-1 sm:flex-none gap-2 h-9 text-xs sm:text-sm">
+                  <Edit className="w-3.5 h-3.5" />
+                  Edit Task
+                </Button>
+                <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" className="flex-1 sm:flex-none gap-2 h-9 text-xs sm:text-sm">
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </Button>
+              </div>
+            )}
           </div>
-          {isAdmin && (
-            <div className="flex gap-2">
-              <Button onClick={() => setIsTaskDialogOpen(true)} variant="outline" className="gap-2">
-                <Edit className="w-4 h-4" />
-                Edit Task
-              </Button>
-              <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" className="gap-2">
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </Button>
-            </div>
-          )}
         </div>
         <Card>
           <CardHeader>
@@ -217,66 +218,68 @@ export default function TaskDetailsPage() {
                 No submissions yet.
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Submitted At</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {adminSubmissions.map((sub) => {
+              <div className="overflow-x-auto -mx-1 px-1">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-[150px] sm:w-auto font-bold uppercase tracking-wider text-[10px]">Member</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px]">Status</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px]">Date</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px]">Score</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px] text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {adminSubmissions.map((sub) => {
+                      const user = typeof sub.user === 'object' && sub.user !== null
+                        ? sub.user
+                        : { id: sub.user, first_name: 'Member', last_name: `#${sub.user}`, email: '' };
 
-                    const user = typeof sub.user === 'object' && sub.user !== null
-                      ? sub.user
-                      : { id: sub.user, first_name: 'Member', last_name: `#${sub.user}`, email: '' };
-
-                    return (
-                      <TableRow key={sub.id}>
-                        <TableCell className="font-medium">
-                          {user.first_name} {user.last_name}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={sub.status === 'SUBMITTED' ? 'default' : 'secondary'}>
-                            {sub.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {sub.feedback ? (
-                            <span className={sub.feedback.score >= 50 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                              {sub.feedback.score}/100
-                            </span>
-                          ) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {sub.task_url && (
-                              <Button variant="ghost" size="icon" asChild>
-                                <a href={sub.task_url} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="w-4 h-4" />
-                                </a>
+                      return (
+                        <TableRow key={sub.id} className="group transition-colors">
+                          <TableCell className="font-medium whitespace-nowrap">
+                            {user.first_name} {user.last_name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={sub.status === 'SUBMITTED' ? 'default' : 'secondary'} className="text-[10px] font-bold">
+                              {sub.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                            {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {sub.feedback ? (
+                              <span className={sub.feedback.score >= 50 ? "text-green-600 font-bold text-xs" : "text-red-600 font-bold text-xs"}>
+                                {sub.feedback.score}/100
+                              </span>
+                            ) : '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1.5">
+                              {sub.task_url && (
+                                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10">
+                                  <a href={sub.task_url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-4 h-4" />
+                                  </a>
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openFeedbackDialog(sub)}
+                                className="h-8 text-[10px] font-bold uppercase"
+                              >
+                                {sub.feedback ? 'Edit Grade' : 'Grade'}
                               </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openFeedbackDialog(sub)}
-                            >
-                              {sub.feedback ? 'Edit Grade' : 'Grade'}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

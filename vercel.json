@@ -1,7 +1,16 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/api-sessions/:path*",
+      "destination": "https://attendanceapp.pythonanywhere.com/api/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://starunion.pythonanywhere.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
   ]
 }
-
-
