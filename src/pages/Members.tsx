@@ -53,7 +53,6 @@ export default function Members() {
         attendance: u.session_attendance || 0,
         isBest: false,
         tasksSubmitted: 0,
-        level: (u.level as string) || '1',
       };
     });
   }, [response]);
@@ -71,7 +70,6 @@ export default function Members() {
         attendance: 0,
         isBest: false,
         tasksSubmitted: 0,
-        level: (u.level as string) || '1',
       };
     });
   }, [committeeData]);
@@ -326,19 +324,6 @@ function MemberCard({ member, index, onAction, showProgress = false, isAdmin }: 
           </div>
           
           <div className="flex flex-col items-end gap-2">
-            {member.level && (
-              <Badge 
-                variant="secondary" 
-                className={cn(
-                  "px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border-none",
-                  member.level === '3' ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" : 
-                  member.level === '2' ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" :
-                  "bg-slate-500/10 text-slate-600 dark:text-slate-400"
-                )}
-              >
-                Level {member.level}
-              </Badge>
-            )}
             {isAdmin && (
               <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <ChevronRight className="w-4 h-4 text-primary" />

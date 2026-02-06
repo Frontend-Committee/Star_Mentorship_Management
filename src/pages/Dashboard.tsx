@@ -262,13 +262,6 @@ export default function Dashboard() {
                         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary font-bold text-xs sm:text-sm shrink-0 border border-primary/10 group-hover:border-primary/20 transition-colors">
                           {member.first_name.charAt(0)}
                         </div>
-                        {member.level && (
-                          <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 border border-border shadow-sm">
-                             <Badge variant="secondary" className="px-1 py-0 text-[8px] h-3.5 min-w-[14px] justify-center bg-primary/10 text-primary border-none">
-                               {member.level}
-                             </Badge>
-                          </div>
-                        )}
                       </div>
                       
                       <div className="flex-1 min-w-0 space-y-1.5">

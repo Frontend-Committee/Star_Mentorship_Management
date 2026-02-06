@@ -15,7 +15,6 @@ export interface User {
   committee?: number | null;
   created_at: string;
   img?: string | null;
-  level?: string;
   [property: string]: unknown;
 }
 
@@ -49,7 +48,6 @@ export interface MemberWithProgress {
   created_at?: string;
   session_attendance?: number;
   week_progress?: number;
-  level?: string;
   [property: string]: unknown;
 }
 
@@ -70,7 +68,6 @@ export interface RegisterPayload {
   last_name: string;
   email: string;
   password: string;
-  level?: string;
 }
 
 export interface LoginResponse {
@@ -204,7 +201,6 @@ export interface Member {
   isBest: boolean;
   tasksSubmitted: number;
   adminNotes?: string;
-  level?: string;
 }
 
 export interface Announcement {
@@ -229,7 +225,6 @@ export interface MemberMinimal {
   first_name?: string;
   id?: number;
   last_name?: string;
-  level?: string;
   [property: string]: unknown;
 }
 

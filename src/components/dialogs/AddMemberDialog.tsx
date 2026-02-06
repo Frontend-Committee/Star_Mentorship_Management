@@ -31,7 +31,6 @@ export function AddMemberDialog({ onSuccess }: AddMemberDialogProps) {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [level, setLevel] = useState('1');
   
   const { mutateAsync: register, isPending } = useRegister();
 
@@ -49,7 +48,6 @@ export function AddMemberDialog({ onSuccess }: AddMemberDialogProps) {
         last_name: lastName,
         email,
         password,
-        level,
       });
       
       toast.success('Member created successfully');
@@ -59,7 +57,6 @@ export function AddMemberDialog({ onSuccess }: AddMemberDialogProps) {
       setLastName('');
       setEmail('');
       setPassword('');
-      setLevel('1');
       
       onSuccess?.();
     } catch (error: unknown) {
@@ -126,19 +123,7 @@ export function AddMemberDialog({ onSuccess }: AddMemberDialogProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="level">Level</Label>
-            <Select value={level} onValueChange={setLevel}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Level 1</SelectItem>
-                <SelectItem value="2">Level 2</SelectItem>
-                <SelectItem value="3">Level 3</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

@@ -101,11 +101,6 @@ export function MemberProfileDialog({
               <div className="flex-1 text-center sm:text-left space-y-1">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <h3 className="text-2xl font-bold text-foreground tracking-tight">{member.name}</h3>
-                  {member.level && (
-                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold px-2 py-0">
-                      LEVEL {member.level}
-                    </Badge>
-                  )}
                 </div>
                 <div className="flex flex-col items-center sm:items-start gap-1 pb-2">
                   <div className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
