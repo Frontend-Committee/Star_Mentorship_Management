@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useUpdateCommitteeGroup, useCommitteeMembers } from '@/features/members/hooks';
+import { useUpdateCommitteeGroup, useCommitteeMembers, useCommitteeGroups } from '@/features/members/hooks';
 import { CommitteeGroup } from '@/types';
 import { Loader2, Search, Users } from 'lucide-react';
 import { toast } from 'sonner';
@@ -32,7 +32,21 @@ export function EditGroupDialog({ group, open, onOpenChange, onSuccess }: EditGr
   );
 
   const { data: members, isLoading: isLoadingMembers } = useCommitteeMembers();
+  const { data: groups } = useCommitteeGroups();
   const updateGroup = useUpdateCommitteeGroup(group.id);
+
+  const assignedUserMapping = useMemo(() => {
+    const mapping = new Map<number, string>();
+    if (!groups) return mapping;
+    groups.forEach(g => {
+      // Don't show the current group as an assignment conflict
+      if (g.id === group.id) return;
+      g.users?.forEach(u => {
+        if (u.id) mapping.set(u.id, g.name);
+      });
+    });
+    return mapping;
+  }, [groups, group.id]);
 
   // Sync state when group prop changes or dialog opens
   useEffect(() => {
@@ -45,11 +59,25 @@ export function EditGroupDialog({ group, open, onOpenChange, onSuccess }: EditGr
   const filteredMembers = useMemo(() => {
     if (!members) return [];
     const query = searchQuery.toLowerCase();
-    return members.filter(member => 
-      `${member.first_name} ${member.last_name}`.toLowerCase().includes(query) ||
-      member.email?.toLowerCase().includes(query)
-    );
-  }, [members, searchQuery]);
+    return members
+      .filter(member => 
+        `${member.first_name} ${member.last_name}`.toLowerCase().includes(query) ||
+        member.email?.toLowerCase().includes(query)
+      )
+      .sort((a, b) => {
+        const aSelected = selectedUsers.includes(a.id!);
+        const bSelected = selectedUsers.includes(b.id!);
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+
+        const aAssigned = assignedUserMapping.has(a.id!);
+        const bAssigned = assignedUserMapping.has(b.id!);
+        if (!aAssigned && bAssigned) return -1;
+        if (aAssigned && !bAssigned) return 1;
+
+        return 0;
+      });
+  }, [members, searchQuery, selectedUsers, assignedUserMapping]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,8 +202,13 @@ export function EditGroupDialog({ group, open, onOpenChange, onSuccess }: EditGr
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold truncate leading-none">
+                          <p className="text-sm font-semibold truncate leading-none flex items-center gap-2">
                             {member.first_name} {member.last_name}
+                            {assignedUserMapping.has(member.id!) && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+                                In: {assignedUserMapping.get(member.id!)}
+                              </span>
+                            )}
                           </p>
                           <p className="text-[10px] text-muted-foreground truncate mt-1">
                             {member.email}

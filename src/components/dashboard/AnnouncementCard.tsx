@@ -24,9 +24,9 @@ export default function AnnouncementCard({ announcements }: AnnouncementCardProp
     <Card className="border-border/50">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-heading">Announcements</CardTitle>
-        <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/announcements')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/announcements')} className="h-8 gap-1 text-xs font-semibold text-primary bg-transparent hover:bg-primary hover:text-primary-foreground rounded-lg transition-all duration-200">
           View all
-          <ArrowRight className="w-4 h-4 ml-1" />
+          <ArrowRight className="w-3 h-3" />
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">

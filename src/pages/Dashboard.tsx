@@ -20,7 +20,8 @@ import {
   LayoutList,
   TrendingUp,
   Users,
-  ArrowUpRight
+  ArrowUpRight,
+  ArrowRight
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useAnnouncements } from '@/features/announcements/hooks';
@@ -240,10 +241,10 @@ export default function Dashboard() {
                   <Star className="w-4 h-4 text-primary fill-primary/20" />
                   <CardTitle className="text-base sm:text-lg font-heading">Member Progress</CardTitle>
                 </div>
-                <Button variant="ghost" size="sm" asChild className="h-8 gap-1 text-xs text-muted-foreground hover:text-primary rounded-full px-3">
+                <Button variant="ghost" size="sm" asChild className="h-8 gap-1 text-xs font-semibold text-primary bg-transparent hover:bg-primary hover:text-primary-foreground rounded-lg transition-all duration-200">
                   <Link to="/members">
-                    View All
-                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    View all
+                    <ArrowRight className="w-3 h-3" />
                   </Link>
                 </Button>
               </CardHeader>
