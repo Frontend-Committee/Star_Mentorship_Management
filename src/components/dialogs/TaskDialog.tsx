@@ -333,11 +333,11 @@ export function TaskDialog({
                         />
                         <Label 
                           htmlFor={checkboxId} 
-                          className="text-sm font-medium leading-none cursor-pointer flex-1 py-1"
+                          className="text-sm font-medium leading-none cursor-pointer flex-1 py-1 min-w-0"
                         >
-                          <div className="flex flex-col gap-0.5">
-                            <span>{user.first_name} {user.last_name}</span>
-                            <span className="text-xs text-muted-foreground font-normal">
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="truncate">{user.first_name} {user.last_name}</span>
+                            <span className="text-xs text-muted-foreground font-normal truncate">
                               {user.email}
                             </span>
                           </div>

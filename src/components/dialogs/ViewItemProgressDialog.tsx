@@ -103,24 +103,24 @@ export function ViewItemProgressDialog({
                 if (!userId) return null;
                 
                 return (
-                  <div key={userId} className="flex flex-col gap-3 p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/20 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${p.is_finished ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}`}>
+                  <div key={userId} className="flex flex-col gap-3 p-3 sm:p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/20 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`p-2 rounded-full shrink-0 ${p.is_finished ? 'bg-green-100/50 text-green-600' : 'bg-muted text-muted-foreground'}`}>
                           {p.is_finished ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate leading-tight">
                             {p.user?.first_name} {p.user?.last_name}
                           </p>
-                          <p className="text-[11px] text-muted-foreground">{p.user?.email}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{p.user?.email}</p>
                         </div>
                       </div>
                       
                       <Button 
                         variant={p.is_finished ? "outline" : "default"} 
                         size="sm" 
-                        className={`h-8 text-xs font-semibold ${p.is_finished ? 'border-green-200 text-green-700 hover:bg-green-50' : ''}`}
+                        className={`h-8 shrink-0 text-xs font-semibold sm:w-auto w-full ${p.is_finished ? 'border-green-200 text-green-700 hover:bg-green-50' : ''}`}
                         onClick={() => handleToggle(p, userId)}
                         disabled={createProgress.isPending || updateProgress.isPending}
                       >
@@ -128,7 +128,7 @@ export function ViewItemProgressDialog({
                       </Button>
                     </div>
 
-                    <div className="flex items-center gap-2 pl-11">
+                    <div className="flex items-center gap-2 sm:pl-11">
                       <div className="relative flex-1">
                         <MessageSquare className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                         <Input
@@ -142,7 +142,7 @@ export function ViewItemProgressDialog({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-9 w-9 text-primary hover:bg-primary/10"
+                          className="h-9 w-9 text-primary hover:bg-primary/10 shrink-0"
                           onClick={() => handleSaveNote(p, userId)}
                           disabled={updateProgress.isPending}
                         >
