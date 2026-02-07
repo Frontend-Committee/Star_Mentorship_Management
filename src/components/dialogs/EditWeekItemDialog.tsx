@@ -13,9 +13,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { useWeekItem, useUpdateWeekItem, useUpdateWeekItemFull } from '@/features/weeks/hooks';
-import { useCommitteeMembers } from '@/features/members/hooks';
-import { Loader2, Search } from 'lucide-react';
+import { useWeekItem, useUpdateWeekItemFull } from '@/features/weeks/hooks';
+import { useCommitteeMembers, useCommitteeGroups } from '@/features/members/hooks';
+import { Loader2, Search, PlusCircle, Users as UsersIcon } from 'lucide-react';
+import { CommitteeGroup } from '@/types';
+import { AddMemberDialog } from './AddMemberDialog';
 
 interface EditWeekItemDialogProps {
   open: boolean;
@@ -35,30 +37,46 @@ export function EditWeekItemDialog({
   const [notes, setNotes] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<number | 'all'>('all');
+  const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   
   const { data: item, isLoading: isLoadingItem } = useWeekItem(itemId);
   const updateItem = useUpdateWeekItemFull(itemId);
   const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
+  const { data: groups } = useCommitteeGroups();
 
   // Filter members based on search query
   const filteredUsers = useMemo(() => {
     if (!users) return [];
-    if (!searchQuery.trim()) return users;
+    
+    let result = users;
+
+    // Filter by group if selected
+    if (selectedGroupFilter !== 'all' && groups) {
+      const group = groups.find(g => g.id === selectedGroupFilter);
+      if (group?.users) {
+        // Handle both full user objects and plain IDs
+        const groupUserIds = group.users.map((u: any) => u.id || u);
+        result = result.filter(u => u.id && groupUserIds.includes(u.id));
+      }
+    }
+
+    if (!searchQuery.trim()) return result;
     
     const query = searchQuery.toLowerCase();
-    return users.filter(user => {
+    return result.filter(user => {
       const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
       const email = (user.email || '').toLowerCase();
       return fullName.includes(query) || email.includes(query);
     });
-  }, [users, searchQuery]);
+  }, [users, searchQuery, selectedGroupFilter, groups]);
 
   // Load item data into form
   useEffect(() => {
     if (item && open) {
-      setTitle(t => t === (item.title || '') ? t : (item.title || ''));
-      setResource(r => r === (item.resource || '') ? r : (item.resource || ''));
-      setNotes(n => n === (item.notes || '') ? n : (item.notes || ''));
+      setTitle(item.title || '');
+      setResource(item.resource || '');
+      setNotes(item.notes || '');
       
       let userIds: number[] = [];
       // Try to extract user IDs from 'users' array first, then fallback to 'week_progress'
@@ -71,11 +89,7 @@ export function EditWeekItemDialog({
           .filter((id): id is number => id !== undefined);
       }
 
-      // Only set if content actually changes to avoid re-renders
-      setSelectedUsers(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(userIds)) return prev;
-        return userIds;
-      });
+      setSelectedUsers(userIds);
     }
   }, [item, open]);
 
@@ -101,7 +115,7 @@ export function EditWeekItemDialog({
     }
 
     try {
-      const payload: import('@/types').WeekItemCreatePayload = { // Changed payload type
+      const payload: import('@/types').WeekItemCreatePayload = {
         week: parentWeekId,
         title: title.trim(),
         resource: resource.trim() || '',
@@ -109,61 +123,23 @@ export function EditWeekItemDialog({
         users: selectedUsers,
       };
       
-      console.log('[EditWeekItemDialog] Updating item with payload:', JSON.stringify(payload, null, 2)); // Added console.log
-      
       await updateItem.mutateAsync(payload);
       toast.success('Item updated successfully');
       onOpenChange(false);
-    } catch (error) {
-      // Log the full error for debugging
-      console.error('[EditWeekItemDialog] Error updating item:', error); // Added console.error
-      
-      // Extract detailed error message from backend
+    } catch (error: any) {
+      console.error('[EditWeekItemDialog] Error updating item:', error);
       let errorMessage = 'Failed to update item';
       
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { data?: Record<string, unknown> | string; status?: number } };
-        const status = axiosError.response?.status;
-        const data = axiosError.response?.data;
-
-        console.error('[EditWeekItemDialog] Response status:', status); // Added console.error
-        console.error('[EditWeekItemDialog] Response data:', data); // Added console.error
-
-        if (status === 500) {
-          errorMessage = 'Server error occurred. Please check the console for details and contact support.'; // Improved 500 error message
-        }
-        
-        if (data) {
-          // Try to extract meaningful error message
-          if (typeof data === 'string') {
-            errorMessage = data;
-          } else if (typeof data === 'object' && data !== null) {
-            const errorObj = data as Record<string, unknown>;
-            
-            // Helper to stringify complex error values
-            const formatErrorValue = (val: unknown): string => {
-              if (Array.isArray(val)) {
-                return val.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v)).join(', ');
-              }
-              if (typeof val === 'object' && val !== null) {
-                return JSON.stringify(val);
-              }
-              return String(val);
-            };
-
-            if (typeof errorObj.detail === 'string') errorMessage = errorObj.detail;
-            else if (typeof errorObj.error === 'string') errorMessage = errorObj.error;
-            else {
-              // Show first validation error
-              const firstKey = Object.keys(errorObj)[0];
-              if (firstKey) {
-                errorMessage = `${firstKey}: ${formatErrorValue(errorObj[firstKey])}`;
-              }
-            }
-          }
+      if (error?.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string') errorMessage = data;
+        else if (data.detail) errorMessage = data.detail;
+        else if (data.error) errorMessage = data.error;
+        else {
+          const firstKey = Object.keys(data)[0];
+          if (firstKey) errorMessage = `${firstKey}: ${JSON.stringify(data[firstKey])}`;
         }
       }
-      
       toast.error(errorMessage);
     }
   };
@@ -177,15 +153,50 @@ export function EditWeekItemDialog({
   };
 
   const selectAll = () => {
-    if (users) {
-      const validUserIds = users.map(u => u.id).filter((id): id is number => id !== undefined);
-      setSelectedUsers(validUserIds);
+    if (!filteredUsers.length) return;
+    
+    const allFilteredSelected = filteredUsers.every(u => u.id && selectedUsers.includes(u.id));
+    
+    if (allFilteredSelected) {
+      // Deselect all visible
+      const visibleIds = filteredUsers.map(u => u.id!).filter(Boolean);
+      setSelectedUsers(prev => prev.filter(id => !visibleIds.includes(id)));
+    } else {
+      // Select all visible
+      const visibleIds = filteredUsers.map(u => u.id!).filter(Boolean);
+      setSelectedUsers(prev => {
+        const newIds = [...prev];
+        visibleIds.forEach(id => {
+          if (!newIds.includes(id)) newIds.push(id);
+        });
+        return newIds;
+      });
+    }
+  };
+
+  const assignGroup = (group: CommitteeGroup) => {
+    if (!group.users) return;
+    
+    const groupUserIds = group.users.map((u: any) => u.id || u).filter((id: any): id is number => !!id);
+    const allGroupSelected = groupUserIds.every((id: number) => selectedUsers.includes(id));
+
+    if (allGroupSelected) {
+      setSelectedUsers(prev => prev.filter(id => !groupUserIds.includes(id)));
+    } else {
+      setSelectedUsers(prev => {
+        const newIds = [...prev];
+        groupUserIds.forEach((id: number) => {
+          if (!newIds.includes(id)) newIds.push(id);
+        });
+        return newIds;
+      });
     }
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">Edit Item</DialogTitle>
           <DialogDescription>
@@ -232,28 +243,98 @@ export function EditWeekItemDialog({
               />
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base">Assigned Members ({selectedUsers.length})</Label>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={selectAll} 
-                  className="h-auto py-1 px-2 text-xs hover:bg-primary/10"
-                >
-                  Select All
-                </Button>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UsersIcon className="w-4 h-4 text-primary" />
+                    <Label className="text-base">Assigned Members ({selectedUsers.length})</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={selectAll} 
+                      className="h-auto py-1 px-2 text-xs hover:bg-primary/10"
+                    >
+                      {filteredUsers.length > 0 && filteredUsers.every(u => u.id && selectedUsers.includes(u.id)) 
+                        ? 'Deselect Visible' 
+                        : 'Select Visible'}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsAddMemberDialogOpen(true)}
+                      className="h-7 text-xs gap-1 border-dashed hover:border-primary hover:text-primary"
+                    >
+                      <PlusCircle className="w-3 h-3" />
+                      New Member
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Group Quick Select */}
+                {groups && groups.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pb-1">
+                    <Button
+                      type="button"
+                      variant={selectedGroupFilter === 'all' ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedGroupFilter('all')}
+                      className="h-7 text-xs rounded-full"
+                    >
+                      All
+                    </Button>
+                    {groups.map(group => {
+                      const groupUserIds = group.users?.map((u: any) => u.id || u).filter((id: any) => !!id) || [];
+                      const isFullySelected = groupUserIds.length > 0 && groupUserIds.every((id: number) => selectedUsers.includes(id));
+                      const isPartiallySelected = !isFullySelected && groupUserIds.some((id: number) => selectedUsers.includes(id));
+
+                      return (
+                        <div key={group.id} className="flex items-center gap-0">
+                          <Button
+                            type="button"
+                            variant={selectedGroupFilter === group.id ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedGroupFilter(group.id === selectedGroupFilter ? 'all' : group.id)}
+                            className={`h-7 text-xs rounded-l-full rounded-r-none border-r-0 ${
+                              isFullySelected ? 'bg-primary/10 border-primary/30 text-primary' : ''
+                            }`}
+                          >
+                            {group.name}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => assignGroup(group)}
+                            className={`h-7 px-2 text-xs rounded-r-full rounded-l-none border-l ${
+                              isFullySelected 
+                                ? 'bg-primary text-primary-foreground hover:bg-primary/90 border-primary' 
+                                : isPartiallySelected
+                                ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
+                                : 'hover:bg-primary/5'
+                            }`}
+                          >
+                            {isFullySelected ? '-' : '+'}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               
               {/* Search Input */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search members..."
+                  placeholder="Search members by name or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 h-9"
                 />
               </div>
 
@@ -334,5 +415,14 @@ export function EditWeekItemDialog({
         )}
       </DialogContent>
     </Dialog>
+    
+    <AddMemberDialog 
+      open={isAddMemberDialogOpen} 
+      onOpenChange={setIsAddMemberDialogOpen} 
+      onSuccess={() => {
+        toast.success("New member created and ready to be assigned");
+      }}
+    />
+    </>
   );
 }

@@ -69,9 +69,11 @@ export default function Dashboard() {
 
     // Calculate Member Progress for List
     const memberProgressList = users.map(member => {
+      // Use week_progress if available, else use progress field from API, both rounded
+      const progressVal = member.week_progress !== undefined ? member.week_progress : (member.progress || 0);
       return {
         ...member,
-        progress: member.week_progress || 0
+        progress: Math.round(Number(progressVal) || 0)
       };
     });
 

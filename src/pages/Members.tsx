@@ -57,7 +57,7 @@ export default function Members() {
         id: actualId ? actualId.toString() : Math.random().toString(),
         name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Anonymous Member',
         email: u.email || 'No email provided',
-        progress: u.week_progress || u.progress || 0,
+        progress: Math.round(u.week_progress || u.progress || 0),
         attendance: u.session_attendance || 0,
         isBest: false,
         tasksSubmitted: u.tasks_submitted || u.submitted_tasks || 0,

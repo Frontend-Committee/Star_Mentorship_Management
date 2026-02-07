@@ -264,7 +264,7 @@ export default function TaskDetailsPage() {
               View and grade member submissions.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-1 sm:px-6">
             {isAdminSubsLoading ? (
               <div className="flex justify-center p-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -278,11 +278,14 @@ export default function TaskDetailsPage() {
                 <Table>
                   <TableHeader className="bg-muted/50">
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-[180px] sm:w-auto font-bold uppercase tracking-wider text-[10px] py-4">Member</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4">Status</TableHead>
-                      <TableHead className="hidden sm:table-cell font-bold uppercase tracking-wider text-[10px] py-4">Date</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4">Score</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px] text-right py-4 pr-6">Actions</TableHead>
+                      <TableHead className="w-[100px] max-w-[120px] sm:w-auto font-bold uppercase tracking-wider text-[10px] py-4 px-2 sm:px-4">Member</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4 px-2 sm:px-4">Status</TableHead>
+                      <TableHead className="hidden sm:table-cell font-bold uppercase tracking-wider text-[10px] py-4 px-4">Date</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4 px-2 sm:px-4">Score</TableHead>
+                      <TableHead className="font-bold uppercase tracking-wider text-[10px] text-right py-4 px-2 sm:pr-6">
+                        <span className="hidden sm:inline">Actions</span>
+                        <span className="sm:hidden">Act</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -294,27 +297,30 @@ export default function TaskDetailsPage() {
                       const getStatusConfig = (status: string) => {
                         const s = status?.toLowerCase() || '';
                         if (['submitted', 'sub', 'reviewed'].includes(s)) {
-                          return { color: 'bg-green-500/15 text-green-700 border-green-500/20 hover:bg-green-500/25', label: status };
+                          return { color: 'bg-green-500/15 text-green-700 border-green-500/20 hover:bg-green-500/25', desktopLabel: 'Submitted', mobileLabel: 'Sub' };
                         }
                         if (['pending', 'pen'].includes(s)) {
-                          return { color: 'bg-yellow-500/15 text-yellow-700 border-yellow-500/20 hover:bg-yellow-500/25', label: status };
+                          return { color: 'bg-yellow-500/15 text-yellow-700 border-yellow-500/20 hover:bg-yellow-500/25', desktopLabel: 'Pending', mobileLabel: 'Pen' };
                         }
                         if (['missed', 'mis'].includes(s)) {
-                          return { color: 'bg-red-500/15 text-red-700 border-red-500/20 hover:bg-red-500/25', label: status };
+                          return { color: 'bg-red-500/15 text-red-700 border-red-500/20 hover:bg-red-500/25', desktopLabel: 'Missed', mobileLabel: 'Mis' };
                         }
-                        return { color: 'bg-secondary text-secondary-foreground', label: status };
+                        return { color: 'bg-secondary text-secondary-foreground', desktopLabel: status, mobileLabel: status };
                       };
 
                       const statusConfig = getStatusConfig(sub.status);
 
                       return (
                         <TableRow key={sub.id} className="group transition-colors">
-                          <TableCell className="font-medium whitespace-nowrap">
-                            {user.first_name} {user.last_name}
+                          <TableCell className="font-medium px-2 sm:px-4 min-w-0">
+                            <div className="truncate w-[90px] sm:w-auto" title={`${user.first_name} ${user.last_name}`}>
+                              {user.first_name} {user.last_name}
+                            </div>
                           </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={`text-[10px] font-bold border ${statusConfig.color}`}>
-                              {statusConfig.label}
+                          <TableCell className="px-2 sm:px-4">
+                            <Badge variant="outline" className={`text-[9px] sm:text-[10px] font-bold border px-1.5 sm:px-2 ${statusConfig.color}`}>
+                              <span className="hidden sm:inline">{statusConfig.desktopLabel}</span>
+                              <span className="sm:hidden">{statusConfig.mobileLabel}</span>
                             </Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden sm:table-cell">
@@ -323,20 +329,20 @@ export default function TaskDetailsPage() {
                               return dateStr ? new Date(dateStr).toLocaleDateString() : '-';
                             })()}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-2 sm:px-4">
                             {sub.feedback ? (
-                              <span className={sub.feedback.score >= 50 ? "text-green-600 font-bold text-xs" : "text-red-600 font-bold text-xs"}>
-                                {sub.feedback.score}/100
+                              <span className={sub.feedback.score >= 50 ? "text-green-600 font-bold text-[10px] sm:text-xs" : "text-red-600 font-bold text-[10px] sm:text-xs"}>
+                                {sub.feedback.score}<span className="hidden sm:inline">/100</span>
                               </span>
                             ) : '-'}
                           </TableCell>
-                          <TableCell className="text-right pr-6">
-                            <div className="flex justify-end items-center gap-2">
+                          <TableCell className="text-right px-2 sm:pr-6">
+                            <div className="flex justify-end items-center gap-1.5 sm:gap-2">
                               {sub.task_url && (
-                                <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-[10px] font-bold uppercase hover:text-primary hover:bg-primary/5">
+                                <Button variant="outline" size="sm" asChild className="h-8 w-8 sm:w-auto sm:px-3 sm:gap-1.5 text-[10px] font-bold uppercase hover:text-primary hover:bg-primary/5 p-0 sm:p-2">
                                   <a href={sub.task_url} target="_blank" rel="noopener noreferrer">
                                     <ExternalLink className="w-3.5 h-3.5" />
-                                    Review Task
+                                    <span className="hidden sm:inline">Review Task</span>
                                   </a>
                                 </Button>
                               )}
@@ -345,9 +351,10 @@ export default function TaskDetailsPage() {
                                 size="sm"
                                 onClick={() => openFeedbackDialog(sub)}
                                 disabled={!['SUBMITTED', 'submitted', 'sub', 'reviewed', 'REVIEWED'].includes(sub.status)}
-                                className="h-8 px-2 text-[9px] sm:text-[10px] font-bold uppercase bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground border-primary"
+                                className="h-8 px-2 sm:px-3 text-[9px] sm:text-[10px] font-bold uppercase bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground border-primary"
                               >
-                                {sub.feedback ? 'Edit Grade' : 'Grade'}
+                                <span className="hidden sm:inline">{sub.feedback ? 'Edit Grade' : 'Grade'}</span>
+                                <span className="sm:hidden">{sub.feedback ? 'Edit' : 'Grade'}</span>
                               </Button>
                               {sub.feedback && (
                                 <Button
