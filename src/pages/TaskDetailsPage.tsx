@@ -228,10 +228,29 @@ export default function TaskDetailsPage() {
           <CardHeader>
             <CardTitle className="text-lg">Description</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed break-words overflow-hidden">
               {task.description}
             </p>
+            
+            {task.link && (
+              <div className="pt-4 border-t border-border/50">
+                <div className="flex flex-col gap-2">
+                  <Label className="text-xs uppercase text-muted-foreground font-bold tracking-wider">Reference Link</Label>
+                  <a 
+                    href={task.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors w-fit group"
+                  >
+                    <div className="p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <ExternalLink className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm font-medium underline underline-offset-4 line-clamp-1">{task.link}</span>
+                  </a>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -299,7 +318,10 @@ export default function TaskDetailsPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden sm:table-cell">
-                            {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : '-'}
+                            {(() => {
+                              const dateStr = sub.submitted_at || sub.created_at;
+                              return dateStr ? new Date(dateStr).toLocaleDateString() : '-';
+                            })()}
                           </TableCell>
                           <TableCell>
                             {sub.feedback ? (
@@ -375,7 +397,10 @@ export default function TaskDetailsPage() {
                     <div>
                       <h4 className="font-semibold text-green-900 dark:text-green-100">Submitted</h4>
                       <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                        You have submitted this task on {mySubmission.submitted_at ? new Date(mySubmission.submitted_at).toLocaleDateString() : 'Unknown date'}.
+                        You have submitted this task on {(() => {
+                          const dateStr = mySubmission.submitted_at || mySubmission.created_at;
+                          return dateStr ? new Date(dateStr).toLocaleDateString() : 'Unknown date';
+                        })()}.
                       </p>
                     </div>
                   </div>

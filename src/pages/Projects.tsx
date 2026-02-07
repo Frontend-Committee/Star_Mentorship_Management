@@ -52,7 +52,8 @@ export default function Projects() {
         title: task.title,
         description: task.description,
         status,
-        submittedAt: submission?.submitted_at,
+        link: task.link,
+        submittedAt: submission?.submitted_at || submission?.created_at,
         feedback: submission?.feedback?.note,
       };
     });

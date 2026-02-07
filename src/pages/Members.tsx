@@ -71,7 +71,7 @@ export default function Members() {
     if (groupsData) {
       groupsData.forEach(g => {
         if (g.users) {
-          g.users.forEach((u: any) => {
+          g.users.forEach((u: import('@/types').User) => {
             // Handle both object and ID formats
             const id = typeof u === 'object' ? u.id : u;
             if (id) {
@@ -304,9 +304,9 @@ export default function Members() {
               <EmptyState type="committee" />
             ) : (
               groupsData.map((group) => (
-                <Card key={group.id} className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
-                  <CardContent className="p-0">
-                    <div className="bg-primary/5 p-4">
+                <Card key={group.id} className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300 flex flex-col">
+                  <CardContent className="p-0 flex flex-col h-full">
+                    <div className="bg-primary/5 p-4 border-b border-border/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -322,7 +322,7 @@ export default function Members() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="h-8 w-8 hover:bg-primary/20 text-primary"
+                              className="h-8 w-8 hover:bg-primary/20 text-primary transition-colors"
                               onClick={() => {
                                 setSelectedGroup(group);
                                 setIsEditGroupOpen(true);
@@ -333,13 +333,58 @@ export default function Members() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="h-8 w-8 hover:bg-destructive/10 text-destructive"
+                              className="h-8 w-8 hover:bg-destructive/10 text-destructive transition-colors"
                               onClick={() => handleDeleteGroup(group)}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
                         )}
+                      </div>
+                    </div>
+
+                    <div className="p-4 flex-1">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-muted-foreground/70">
+                          <Shield className="w-3 h-3" />
+                          <h4 className="text-[10px] font-bold uppercase tracking-wider">Group Members</h4>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                          {group.users && group.users.length > 0 ? (
+                            group.users.map((u) => {
+                              const memberObj = members.find(m => m.id === u.id.toString());
+                              return (
+                                <div 
+                                  key={u.id} 
+                                  className={cn(
+                                    "flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/10 transition-all group/item",
+                                    memberObj ? "cursor-pointer hover:bg-primary/5 hover:border-primary/20" : "cursor-default opacity-80"
+                                  )}
+                                  onClick={() => memberObj && handleViewProfile(memberObj)}
+                                >
+                                  <Avatar className="h-7 w-7 border-2 border-background shadow-sm shrink-0">
+                                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                                      {u.first_name?.[0]}{u.last_name?.[0]}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold truncate group-hover/item:text-primary transition-colors">
+                                      {u.first_name} {u.last_name}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground truncate opacity-70">
+                                      {u.email}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="col-span-full py-8 text-center bg-muted/10 rounded-xl border border-dashed border-border/50">
+                              <p className="text-xs text-muted-foreground">No members assigned to this group</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>

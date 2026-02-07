@@ -34,6 +34,7 @@ export function TaskDialog({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
+  const [link, setLink] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -51,8 +52,9 @@ export function TaskDialog({
     if (selectedGroupFilter !== 'all' && groups) {
       const group = groups.find(g => g.id === selectedGroupFilter);
       if (group?.users) {
-        // Handle both full user objects and plain IDs
-        const groupUserIds = group.users.map((u: any) => u.id || u);
+        const groupUserIds = group.users.map((u: import('@/types').User | number) => 
+          typeof u === 'number' ? u : u.id
+        );
         result = result.filter(u => u.id && groupUserIds.includes(u.id));
       }
     }
@@ -71,6 +73,7 @@ export function TaskDialog({
     if (open && task) {
       setTitle(task.title || '');
       setDescription(task.description || '');
+      setLink(task.link || '');
       if (task.date) {
         setDate(task.date.split('T')[0]);
       }
@@ -110,6 +113,7 @@ export function TaskDialog({
       title: title.trim(),
       description: description.trim(),
       date: isoDate,
+      link: link.trim() || null,
       users: selectedUsers,
       assigned_to: selectedUsers,
     });
@@ -148,8 +152,9 @@ export function TaskDialog({
   const assignGroup = (group: CommitteeGroup) => {
     if (!group.users) return;
     
-    // Handle both full user objects and plain IDs
-    const groupUserIds = group.users.map((u: any) => u.id || u).filter((id: any): id is number => !!id);
+    const groupUserIds = group.users.map((u: import('@/types').User | number) => 
+      typeof u === 'number' ? u : u.id
+    ).filter((id): id is number => !!id);
     const allGroupSelected = groupUserIds.every((id: number) => selectedUsers.includes(id));
 
     if (allGroupSelected) {
@@ -207,6 +212,15 @@ export function TaskDialog({
               className="resize-none"
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="link">Resource Link (Optional)</Label>
+            <Input
+              id="link"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
 
           <div className="space-y-3">
             <div className="flex flex-col gap-3">
@@ -238,8 +252,9 @@ export function TaskDialog({
                     All Members
                   </Button>
                   {groups.map(group => {
-                    // Handle both full user objects and plain IDs
-                    const groupUserIds = group.users?.map((u: any) => u.id || u).filter((id: any) => !!id) || [];
+                    const groupUserIds = group.users?.map((u: import('@/types').User | number) => 
+                      typeof u === 'number' ? u : u.id
+                    ).filter((id): id is number => !!id) || [];
                     const isFullySelected = groupUserIds.length > 0 && groupUserIds.every((id: number) => selectedUsers.includes(id));
                     const isPartiallySelected = !isFullySelected && groupUserIds.some((id: number) => selectedUsers.includes(id));
 

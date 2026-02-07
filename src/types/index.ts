@@ -104,6 +104,7 @@ export interface Task {
   title: string;
   description: string;
   date: string;
+  link?: string | null;
   created_at?: string;
   updated_at?: string;
   assigned_to?: number[];
@@ -113,6 +114,7 @@ export interface TaskCreatePayload {
   title: string;
   description: string;
   date: string;
+  link?: string | null;
   users?: number[];  // Used by backend for creation
   assigned_to?: number[]; // Used for display/edit if needed, but backend expects 'users' for creation
 }
@@ -121,6 +123,7 @@ export interface TaskUpdatePayload {
   title?: string;
   description?: string;
   date?: string;
+  link?: string | null;
   assigned_to?: number[];
 }
 
@@ -152,6 +155,8 @@ export interface TaskSubmissionDetail {
   task: number; // ID
   user: { id: number; first_name: string; last_name: string; email: string };
   submitted_at: string; // spec says submitted_at
+  created_at?: string;
+  updated_at?: string;
   note: string;
   task_url: string;
   status: SubmissionStatus;
@@ -163,6 +168,8 @@ export interface MemberSubmission {
   id: number;
   task: Task; // Nested Task object
   submitted_at: string;
+  created_at?: string;
+  updated_at?: string;
   note: string;
   task_url: string;
   status: SubmissionStatus;
@@ -370,6 +377,7 @@ export interface Project {
   description: string;
   requirements?: string[];
   deadline?: string;
+  link?: string | null;
   status: 'pending' | 'submitted' | 'reviewed';
   feedback?: string;
   grade?: string;
