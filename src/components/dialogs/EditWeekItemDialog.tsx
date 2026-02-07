@@ -16,8 +16,9 @@ import { toast } from 'sonner';
 import { useWeekItem, useUpdateWeekItemFull } from '@/features/weeks/hooks';
 import { useCommitteeMembers, useCommitteeGroups } from '@/features/members/hooks';
 import { Loader2, Search, PlusCircle, Users as UsersIcon } from 'lucide-react';
-import { CommitteeGroup } from '@/types';
+import { CommitteeGroup, MemberMinimal, WeekProgress } from '@/types';
 import { AddMemberDialog } from './AddMemberDialog';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface EditWeekItemDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function EditWeekItemDialog({
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<number | 'all'>('all');
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   
+  const queryClient = useQueryClient();
   const { data: item, isLoading: isLoadingItem } = useWeekItem(itemId);
   const updateItem = useUpdateWeekItemFull(itemId);
   const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
@@ -56,7 +58,10 @@ export function EditWeekItemDialog({
       const group = groups.find(g => g.id === selectedGroupFilter);
       if (group?.users) {
         // Handle both full user objects and plain IDs
-        const groupUserIds = group.users.map((u: any) => u.id || u);
+        const groupUserIds = group.users.map((u: number | MemberMinimal) => 
+          typeof u === 'number' ? u : u.id
+        ).filter((id): id is number => id !== undefined);
+        
         result = result.filter(u => u.id && groupUserIds.includes(u.id));
       }
     }
@@ -85,11 +90,19 @@ export function EditWeekItemDialog({
       } else if (item.week_progress && Array.isArray(item.week_progress) && item.week_progress.length > 0) {
         // Fallback: extract user IDs from week_progress
         userIds = item.week_progress
-          .map(p => p.user?.id)
+          .map(p => {
+             const u = (p as WeekProgress).user;
+             if (typeof u === 'object' && u !== null) return u.id;
+             return u as unknown as number;
+          })
           .filter((id): id is number => id !== undefined);
       }
 
-      setSelectedUsers(userIds);
+      setSelectedUsers(prev => {
+        // Only update if the IDs have actually changed to avoid unnecessary re-renders
+        if (JSON.stringify(prev) === JSON.stringify(userIds)) return prev;
+        return userIds;
+      });
     }
   }, [item, open]);
 
@@ -124,6 +137,12 @@ export function EditWeekItemDialog({
       };
       
       await updateItem.mutateAsync(payload);
+      
+      // Explicitly tell the query client to refresh the weeks list
+      // this ensures the "0/X Done" count on the card updates immediately
+      await queryClient.invalidateQueries({ queryKey: ['weeks'] });
+      await queryClient.refetchQueries({ queryKey: ['weeks'] });
+      
       toast.success('Item updated successfully');
       onOpenChange(false);
     } catch (error: any) {
@@ -177,7 +196,10 @@ export function EditWeekItemDialog({
   const assignGroup = (group: CommitteeGroup) => {
     if (!group.users) return;
     
-    const groupUserIds = group.users.map((u: any) => u.id || u).filter((id: any): id is number => !!id);
+    const groupUserIds = group.users.map((u: number | MemberMinimal) => 
+      typeof u === 'number' ? u : u.id
+    ).filter((id): id is number => id !== undefined);
+    
     const allGroupSelected = groupUserIds.every((id: number) => selectedUsers.includes(id));
 
     if (allGroupSelected) {
@@ -288,7 +310,10 @@ export function EditWeekItemDialog({
                       All
                     </Button>
                     {groups.map(group => {
-                      const groupUserIds = group.users?.map((u: any) => u.id || u).filter((id: any) => !!id) || [];
+                      const groupUserIds = group.users?.map((u: number | MemberMinimal) => 
+                        typeof u === 'number' ? u : u.id
+                      ).filter((id): id is number => id !== undefined) || [];
+                      
                       const isFullySelected = groupUserIds.length > 0 && groupUserIds.every((id: number) => selectedUsers.includes(id));
                       const isPartiallySelected = !isFullySelected && groupUserIds.some((id: number) => selectedUsers.includes(id));
 

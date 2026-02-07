@@ -174,8 +174,11 @@ export const useUpdateWeekItem = (id: number) => {
       return response.data;
     },
     onSuccess: () => {
+      // Invalidate both the generic 'weeks' key and any specialized ones
       queryClient.invalidateQueries({ queryKey: ['weeks'] });
       queryClient.invalidateQueries({ queryKey: ['weekItems', id] });
+      // Force a refetch to ensure the UI is in sync
+      queryClient.refetchQueries({ queryKey: ['weeks'] });
     },
   });
 };
@@ -193,8 +196,11 @@ export const useUpdateWeekItemFull = (id: number) => {
       return response.data;
     },
     onSuccess: () => {
+      // Broadly invalidate all weeks and specific items
       queryClient.invalidateQueries({ queryKey: ['weeks'] });
       queryClient.invalidateQueries({ queryKey: ['weekItems', id] });
+      // Force an immediate refetch of the weeks list
+      queryClient.refetchQueries({ queryKey: ['weeks'] });
     },
   });
 };

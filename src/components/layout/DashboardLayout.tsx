@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 
+import { Footer } from './Footer';
+
 export default function DashboardLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -48,12 +50,13 @@ export default function DashboardLayout() {
       {/* Add padding-top on mobile for the fixed header */}
       <main
         className={cn(
-          "flex-1 pt-16 lg:pt-0 transition-all duration-300"
+          "flex-1 pt-16 lg:pt-0 transition-all duration-300 flex flex-col min-h-screen"
         )}
       >
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8 flex-1">
           <Outlet />
         </div>
+        <Footer />
       </main>
     </div>
   );

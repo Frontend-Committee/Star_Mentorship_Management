@@ -1,7 +1,6 @@
 import AchievementBadge from '@/components/dashboard/AchievementBadge';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import StatCard from '@/components/dashboard/StatCard';
-import WeeklyTaskCard from '@/components/dashboard/WeeklyTaskCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -154,11 +153,6 @@ export default function Dashboard() {
     };
   }, [isAdmin, memberSubmissionsResponse, memberTasksResponse, weeks]);
 
-  const currentWeek = useMemo(() => {
-    if (weeks.length === 0) return null;
-    const incomplete = weeks.find((w) => !w.isCompleted);
-    return incomplete || weeks[weeks.length - 1];
-  }, [weeks]);
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -250,42 +244,45 @@ export default function Dashboard() {
           {/* Admin: Member Overview */}
           {isAdmin && (
             <Card className="border-border/50 animate-fade-in flex flex-col" style={{ animationDelay: '0.1s' }}>
-              <CardHeader className="flex flex-row items-center justify-between pb-4">
+              <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6 pb-2 sm:pb-4">
                 <div className="flex items-center gap-2">
                   <Star className="w-4 h-4 text-primary fill-primary/20" />
-                  <CardTitle className="text-base sm:text-lg font-heading">Member Progress</CardTitle>
+                  <CardTitle className="text-base sm:text-lg font-heading">Progress</CardTitle>
                 </div>
-                <Button variant="ghost" size="sm" asChild className="h-8 gap-1 text-xs font-semibold text-primary bg-transparent hover:bg-primary hover:text-primary-foreground rounded-lg transition-all duration-200">
+                <Button variant="ghost" size="sm" asChild className="h-7 sm:h-8 px-2 sm:px-3 gap-1 text-[10px] sm:text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground rounded-lg transition-all">
                   <Link to="/members">
-                    View all
+                    <span className="hidden xs:inline">View all</span>
+                    <span className="xs:hidden">All</span>
                     <ArrowRight className="w-3 h-3" />
                   </Link>
                 </Button>
               </CardHeader>
               <CardContent className="p-0 flex-1 min-h-0">
-                <div className="max-h-[320px] overflow-y-auto custom-scrollbar p-6 pt-0 space-y-1">
+                <div className="max-h-[350px] overflow-y-auto custom-scrollbar px-4 sm:px-6 pb-6 space-y-1">
                   {adminStats?.memberProgressList.map((member, index) => (
                     <div
                       key={member.id}
-                      className="group flex items-center gap-3 sm:gap-4 p-2.5 rounded-xl hover:bg-muted/40 transition-all duration-200 animate-slide-in cursor-default"
+                      className="group flex items-center gap-3 p-2 rounded-xl hover:bg-muted/40 transition-all duration-200 animate-slide-in cursor-default"
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
-                      <div className="relative">
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary font-bold text-xs sm:text-sm shrink-0 border border-primary/10 group-hover:border-primary/20 transition-colors">
+                      <div className="relative shrink-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary font-bold text-xs sm:text-sm border border-primary/10 group-hover:border-primary/20 transition-colors">
                           {member.first_name.charAt(0)}
                         </div>
                       </div>
                       
-                      <div className="flex-1 min-w-0 space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-baseline justify-between gap-2">
                           <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                            {member.first_name} {member.last_name}
+                            {member.first_name} <span className="hidden sm:inline">{member.last_name}</span>
+                            <span className="sm:hidden">{member.last_name.charAt(0)}.</span>
                           </p>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px] font-bold text-accent uppercase tracking-tighter bg-accent/5 px-1.5 py-0.5 rounded-md border border-accent/10">
-                              {member.tasks_submitted || member.submitted_tasks || 0} Tasks
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-accent uppercase tracking-tighter bg-accent/5 px-1.5 py-0.5 rounded-md border border-accent/10">
+                              {member.tasks_submitted || member.submitted_tasks || 0}
+                              <span className="hidden xs:inline ml-0.5">Tasks</span>
                             </span>
-                            <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors">
+                            <span className="text-[10px] sm:text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors min-w-[28px] text-right">
                               {member.progress}%
                             </span>
                           </div>
@@ -310,12 +307,6 @@ export default function Dashboard() {
             </Card>
           )}
 
-          {/* Current Week Task */}
-          {currentWeek && (
-            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <WeeklyTaskCard currentWeek={currentWeek} />
-            </div>
-          )}
         </div>
 
         {/* Right Column - Announcements */}
