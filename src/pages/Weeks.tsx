@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -448,7 +449,7 @@ export default function Weeks() {
                                  <MessageSquare className="w-4 h-4" />
                                  <span className="font-semibold text-xs uppercase tracking-wider">Week Overview</span>
                                </div>
-                               {week.description}
+                               <MarkdownRenderer content={week.description} />
                             </div>
                           )}
 

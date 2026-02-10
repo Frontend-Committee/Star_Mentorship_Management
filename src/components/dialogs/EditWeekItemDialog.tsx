@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { toast } from 'sonner';
 import { useWeekItem, useUpdateWeekItemFull } from '@/features/weeks/hooks';
 import { useCommitteeMembers, useCommitteeGroups } from '@/features/members/hooks';
@@ -254,15 +256,26 @@ export function EditWeekItemDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-item-notes">Notes</Label>
-              <Textarea
-                id="edit-item-notes"
-                placeholder="Additional instructions..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                className="resize-none"
-              />
+              <Label htmlFor="edit-item-notes">Notes (Markdown Supported)</Label>
+              <Tabs defaultValue="edit" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 h-9">
+                  <TabsTrigger value="edit" className="text-xs">Edit</TabsTrigger>
+                  <TabsTrigger value="preview" className="text-xs">Preview</TabsTrigger>
+                </TabsList>
+                <TabsContent value="edit" className="mt-2">
+                  <Textarea
+                    id="edit-item-notes"
+                    placeholder="Additional instructions... (Markdown supported)"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={4}
+                    className="resize-none"
+                  />
+                </TabsContent>
+                <TabsContent value="preview" className="mt-2 min-h-[110px] p-3 border rounded-md bg-muted/20">
+                  <MarkdownRenderer content={notes || "*No notes to preview*"} />
+                </TabsContent>
+              </Tabs>
             </div>
 
             <div className="space-y-4">

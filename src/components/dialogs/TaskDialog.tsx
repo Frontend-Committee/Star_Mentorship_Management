@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { useCommitteeMembers, useCommitteeGroups } from '@/features/members/hooks';
 import { Task, TaskCreatePayload, CommitteeGroup } from '@/types';
 import { Loader2, Search, Users } from 'lucide-react';
@@ -202,15 +204,26 @@ export function TaskDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Task details and requirements..."
-              rows={4}
-              className="resize-none"
-            />
+            <Label htmlFor="description">Description (Markdown Supported)</Label>
+            <Tabs defaultValue="edit" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 h-9">
+                <TabsTrigger value="edit" className="text-xs">Edit</TabsTrigger>
+                <TabsTrigger value="preview" className="text-xs">Preview</TabsTrigger>
+              </TabsList>
+              <TabsContent value="edit" className="mt-2">
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Task details and requirements... (Markdown supported)"
+                  rows={6}
+                  className="resize-none"
+                />
+              </TabsContent>
+              <TabsContent value="preview" className="mt-2 min-h-[148px] p-3 border rounded-md bg-muted/20">
+                <MarkdownRenderer content={description || "*No description to preview*"} />
+              </TabsContent>
+            </Tabs>
           </div>
           <div className="space-y-2">
             <Label htmlFor="link">Resource Link (Optional)</Label>

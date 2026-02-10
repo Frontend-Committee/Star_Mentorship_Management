@@ -1,4 +1,5 @@
 import { TaskDialog } from '@/components/dialogs/TaskDialog';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { FeedbackDialog } from '@/components/dialogs/FeedbackDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -229,9 +230,7 @@ export default function TaskDetailsPage() {
             <CardTitle className="text-lg">Description</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed break-words overflow-hidden">
-              {task.description}
-            </p>
+            <MarkdownRenderer content={task.description} />
             
             {task.link && (
               <div className="pt-4 border-t border-border/50">

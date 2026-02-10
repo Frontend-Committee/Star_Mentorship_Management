@@ -1,4 +1,5 @@
 import { TaskDialog } from '@/components/dialogs/TaskDialog';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
@@ -104,9 +105,9 @@ export default function TasksListPage() {
                     <CalendarDays className="w-4 h-4" />
                     <span>Due: {new Date(task.date).toLocaleDateString()}</span>
                   </div>
-                  <p className="text-muted-foreground line-clamp-3 text-sm break-words">
-                    {task.description}
-                  </p>
+                  <div className="text-muted-foreground line-clamp-3 text-sm break-words">
+                    <MarkdownRenderer content={task.description} />
+                  </div>
                 </CardContent>
               </Card>
             </Link>
