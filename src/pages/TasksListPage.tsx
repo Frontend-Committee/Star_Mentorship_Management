@@ -101,9 +101,16 @@ export default function TasksListPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CalendarDays className="w-4 h-4" />
-                    <span>Due: {new Date(task.date).toLocaleDateString()}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CalendarDays className="w-4 h-4" />
+                      <span>Due: {new Date(task.date).toLocaleDateString()}</span>
+                    </div>
+                    {new Date(task.date) < new Date() && (
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                        Expired
+                      </span>
+                    )}
                   </div>
                   <div className="text-muted-foreground line-clamp-3 text-sm break-words">
                     <MarkdownRenderer content={task.description} />

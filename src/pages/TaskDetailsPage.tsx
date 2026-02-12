@@ -64,6 +64,7 @@ export default function TaskDetailsPage() {
   const { mutate: deleteTask, isPending: isDeletingTask } = useDeleteTask();
   const { mutate: deleteFeedback, isPending: isDeletingFeedback } = useDeleteFeedback();
   const navigate = useNavigate();
+  const isDeadlinePassed = task ? new Date(task.date) < new Date() : false;
 
   // State
   const [submissionUrl, setSubmissionUrl] = useState('');
@@ -197,6 +198,8 @@ export default function TaskDetailsPage() {
     );
   }
 
+  const isTaskMissed = isDeadlinePassed && (!mySubmission || ['pending', 'pen'].includes(String(mySubmission.status).toLowerCase()));
+
   return (
     <div className="space-y-6 lg:space-y-8 animate-fade-in">
       <div className="space-y-6">
@@ -213,6 +216,12 @@ export default function TaskDetailsPage() {
             </div>
             {isAdmin && (
               <div className="flex flex-row sm:flex-nowrap gap-2 w-full sm:w-auto">
+                {isDeadlinePassed && (
+                  <Button onClick={() => setIsTaskDialogOpen(true)} variant="default" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs bg-orange-600 hover:bg-orange-700 text-white border-orange-600">
+                    <Clock className="w-3.5 h-3.5" />
+                    Re-open Task
+                  </Button>
+                )}
                 <Button onClick={() => setIsTaskDialogOpen(true)} variant="outline" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs">
                   <Edit className="w-3.5 h-3.5" />
                   Edit
@@ -294,7 +303,13 @@ export default function TaskDetailsPage() {
                         : { id: sub.user, first_name: 'Member', last_name: `#${sub.user}`, email: '' };
 
                       const getStatusConfig = (status: string) => {
-                        const s = status?.toLowerCase() || '';
+                        let s = status?.toLowerCase() || '';
+                        
+                        // If deadline passed and still pending, it's missed
+                        if (['pending', 'pen'].includes(s) && isDeadlinePassed) {
+                          s = 'missed';
+                        }
+
                         if (['submitted', 'sub', 'reviewed'].includes(s)) {
                           return { color: 'bg-green-500/15 text-green-700 border-green-500/20 hover:bg-green-500/25', desktopLabel: 'Submitted', mobileLabel: 'Sub' };
                         }
@@ -426,8 +441,28 @@ export default function TaskDetailsPage() {
                     variant="outline"
                     onClick={() => setIsEditing(true)}
                     className="w-full mt-2"
+                    disabled={isDeadlinePassed}
                   >
-                    Update Submission
+                    {isDeadlinePassed ? 'Deadline Passed' : 'Update Submission'}
+                  </Button>
+                </div>
+              ) : isTaskMissed ? (
+                <div className="space-y-4">
+                  <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-lg flex items-start gap-3 border border-red-200 dark:border-red-900">
+                    <Clock className="w-5 h-5 text-red-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-red-900 dark:text-red-100">Deadline Missed</h4>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                        The deadline for this task has passed. Submissions are now closed.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-2"
+                    disabled
+                  >
+                    Submission Disabled
                   </Button>
                 </div>
               ) : (
@@ -466,7 +501,7 @@ export default function TaskDetailsPage() {
                     <Button 
                       type="submit" 
                       className="flex-[2] font-bold uppercase text-xs tracking-wider" 
-                      disabled={isSubmitting || isUpdatingSub}
+                      disabled={isSubmitting || isUpdatingSub || isDeadlinePassed}
                     >
                       {(isSubmitting || isUpdatingSub) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       {mySubmission && ['submitted', 'sub', 'reviewed'].includes(String(mySubmission.status).toLowerCase()) 
