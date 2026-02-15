@@ -221,6 +221,7 @@ export default function TaskDetailsPage() {
                     <Clock className="w-3.5 h-3.5" />
                     Re-open
                   </Button>
+                  
                 )}
                 <Button onClick={() => setIsTaskDialogOpen(true)} variant="outline" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs px-4">
                   <Edit className="w-3.5 h-3.5" />
