@@ -176,10 +176,10 @@ export function TaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col p-4 sm:p-6 transition-all">
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">
-            {task ? 'Edit Task' : 'Create New Task'}
+            {task ? (new Date(task.date) < new Date() ? 'Re-open & Edit Task' : 'Edit Task') : 'Create New Task'}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto flex-1 px-1 custom-scrollbar">
@@ -244,13 +244,16 @@ export function TaskDialog({
                   variant="ghost" 
                   size="sm" 
                   onClick={toggleAll} 
-                  className="h-auto py-1 px-2 text-xs hover:bg-primary/10"
+                  className="h-auto py-1 px-2 text-xs hover:bg-primary/10 transition-colors"
                 >
                   {filteredUsers.length > 0 && filteredUsers.every(u => u.id && selectedUsers.includes(u.id)) 
                     ? 'Deselect Visible' 
                     : 'Select Visible'}
                 </Button>
               </div>
+
+              <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 space-y-3">
+                <Label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Quick Select Groups</Label>
 
               {/* Group Quick Select */}
               {groups && groups.length > 0 && (
@@ -305,6 +308,7 @@ export function TaskDialog({
                   })}
                 </div>
               )}
+              </div>
             </div>
             
             {/* Search Input */}
@@ -368,23 +372,24 @@ export function TaskDialog({
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-border/50 mt-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               Cancel
             </Button>
-            <Button type="submit" variant="gradient" disabled={isLoading}>
+            <Button type="submit" variant="gradient" disabled={isLoading} className="w-full sm:w-auto order-1 sm:order-2">
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Saving...
                 </>
               ) : (
-                'Save Task'
+                task ? 'Update Task' : 'Create Task'
               )}
             </Button>
           </div>

@@ -215,18 +215,18 @@ export default function TaskDetailsPage() {
               </div>
             </div>
             {isAdmin && (
-              <div className="flex flex-row sm:flex-nowrap gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto">
                 {isDeadlinePassed && (
-                  <Button onClick={() => setIsTaskDialogOpen(true)} variant="default" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs bg-orange-600 hover:bg-orange-700 text-white border-orange-600">
+                  <Button onClick={() => setIsTaskDialogOpen(true)} variant="default" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs bg-orange-600 hover:bg-orange-700 text-white border-orange-600 px-4">
                     <Clock className="w-3.5 h-3.5" />
-                    Re-open Task
+                    Re-open
                   </Button>
                 )}
-                <Button onClick={() => setIsTaskDialogOpen(true)} variant="outline" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs">
+                <Button onClick={() => setIsTaskDialogOpen(true)} variant="outline" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs px-4">
                   <Edit className="w-3.5 h-3.5" />
                   Edit
                 </Button>
-                <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs">
+                <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" size="sm" className="flex-1 sm:flex-none gap-2 h-9 text-xs px-4">
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete
                 </Button>
@@ -254,7 +254,7 @@ export default function TaskDetailsPage() {
                     <div className="p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
                       <ExternalLink className="w-4 h-4" />
                     </div>
-                    <span className="text-sm font-medium underline underline-offset-4 line-clamp-1">{task.link}</span>
+                    <span className="text-sm font-medium underline underline-offset-4 break-all">{task.link}</span>
                   </a>
                 </div>
               </div>
@@ -282,115 +282,194 @@ export default function TaskDetailsPage() {
                 No submissions yet.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-border/50">
-                <Table>
-                  <TableHeader className="bg-muted/50">
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-[100px] max-w-[120px] sm:w-auto font-bold uppercase tracking-wider text-[10px] py-4 px-2 sm:px-4">Member</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4 px-2 sm:px-4">Status</TableHead>
-                      <TableHead className="hidden sm:table-cell font-bold uppercase tracking-wider text-[10px] py-4 px-4">Date</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4 px-2 sm:px-4">Score</TableHead>
-                      <TableHead className="font-bold uppercase tracking-wider text-[10px] text-right py-4 px-2 sm:pr-6">
-                        <span className="hidden sm:inline">Actions</span>
-                        <span className="sm:hidden">Act</span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {adminSubmissions.map((sub) => {
-                      const user = typeof sub.user === 'object' && sub.user !== null
-                        ? sub.user
-                        : { id: sub.user, first_name: 'Member', last_name: `#${sub.user}`, email: '' };
+              <div className="space-y-4">
+                {/* Desktop Table View */}
+                <div className="hidden sm:block overflow-x-auto rounded-lg border border-border/50">
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4 px-4">Member</TableHead>
+                        <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4 px-4">Status</TableHead>
+                        <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4 px-4">Date</TableHead>
+                        <TableHead className="font-bold uppercase tracking-wider text-[10px] py-4 px-4">Score</TableHead>
+                        <TableHead className="font-bold uppercase tracking-wider text-[10px] text-right py-4 px-6">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {adminSubmissions.map((sub) => {
+                        const user = typeof sub.user === 'object' && sub.user !== null
+                          ? sub.user
+                          : { id: sub.user, first_name: 'Member', last_name: `#${sub.user}`, email: '' };
 
-                      const getStatusConfig = (status: string) => {
-                        let s = status?.toLowerCase() || '';
-                        
-                        // If deadline passed and still pending, it's missed
-                        if (['pending', 'pen'].includes(s) && isDeadlinePassed) {
-                          s = 'missed';
-                        }
+                        const getStatusConfig = (status: string) => {
+                          let s = status?.toLowerCase() || '';
+                          if (['pending', 'pen'].includes(s) && isDeadlinePassed) s = 'missed';
 
-                        if (['submitted', 'sub', 'reviewed'].includes(s)) {
-                          return { color: 'bg-green-500/15 text-green-700 border-green-500/20 hover:bg-green-500/25', desktopLabel: 'Submitted', mobileLabel: 'Sub' };
-                        }
-                        if (['pending', 'pen'].includes(s)) {
-                          return { color: 'bg-yellow-500/15 text-yellow-700 border-yellow-500/20 hover:bg-yellow-500/25', desktopLabel: 'Pending', mobileLabel: 'Pen' };
-                        }
-                        if (['missed', 'mis'].includes(s)) {
-                          return { color: 'bg-red-500/15 text-red-700 border-red-500/20 hover:bg-red-500/25', desktopLabel: 'Missed', mobileLabel: 'Mis' };
-                        }
-                        return { color: 'bg-secondary text-secondary-foreground', desktopLabel: status, mobileLabel: status };
-                      };
+                          if (['submitted', 'sub', 'reviewed'].includes(s)) {
+                            return { color: 'bg-green-500/15 text-green-700 border-green-500/20 hover:bg-green-500/25', label: 'Submitted' };
+                          }
+                          if (['pending', 'pen'].includes(s)) {
+                            return { color: 'bg-yellow-500/15 text-yellow-700 border-yellow-500/20 hover:bg-yellow-500/25', label: 'Pending' };
+                          }
+                          if (['missed', 'mis'].includes(s)) {
+                            return { color: 'bg-red-500/15 text-red-700 border-red-500/20 hover:bg-red-500/25', label: 'Missed' };
+                          }
+                          return { color: 'bg-secondary text-secondary-foreground', label: status };
+                        };
 
-                      const statusConfig = getStatusConfig(sub.status);
+                        const statusConfig = getStatusConfig(sub.status);
 
-                      return (
-                        <TableRow key={sub.id} className="group transition-colors">
-                          <TableCell className="font-medium px-2 sm:px-4 min-w-0">
-                            <div className="truncate w-[90px] sm:w-auto" title={`${user.first_name} ${user.last_name}`}>
+                        return (
+                          <TableRow key={sub.id} className="group transition-colors">
+                            <TableCell className="font-medium px-4">
                               {user.first_name} {user.last_name}
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-2 sm:px-4">
-                            <Badge variant="outline" className={`text-[9px] sm:text-[10px] font-bold border px-1.5 sm:px-2 ${statusConfig.color}`}>
-                              <span className="hidden sm:inline">{statusConfig.desktopLabel}</span>
-                              <span className="sm:hidden">{statusConfig.mobileLabel}</span>
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden sm:table-cell">
-                            {(() => {
-                              const dateStr = sub.submitted_at || sub.created_at;
-                              return dateStr ? new Date(dateStr).toLocaleDateString() : '-';
-                            })()}
-                          </TableCell>
-                          <TableCell className="px-2 sm:px-4">
-                            {sub.feedback ? (
-                              <span className={sub.feedback.score >= 50 ? "text-green-600 font-bold text-[10px] sm:text-xs" : "text-red-600 font-bold text-[10px] sm:text-xs"}>
-                                {sub.feedback.score}<span className="hidden sm:inline">/100</span>
-                              </span>
-                            ) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right px-2 sm:pr-6">
-                            <div className="flex justify-end items-center gap-1.5 sm:gap-2">
-                              {sub.task_url && (
-                                <Button variant="outline" size="sm" asChild className="h-8 w-8 sm:w-auto sm:px-3 sm:gap-1.5 text-[10px] font-bold uppercase hover:text-primary hover:bg-primary/5 p-0 sm:p-2">
-                                  <a href={sub.task_url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                    <span className="hidden sm:inline">Review Task</span>
-                                  </a>
-                                </Button>
-                              )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openFeedbackDialog(sub)}
-                                disabled={!['SUBMITTED', 'submitted', 'sub', 'reviewed', 'REVIEWED'].includes(sub.status)}
-                                className="h-8 px-2 sm:px-3 text-[9px] sm:text-[10px] font-bold uppercase bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground border-primary"
-                              >
-                                <span className="hidden sm:inline">{sub.feedback ? 'Edit Grade' : 'Grade'}</span>
-                                <span className="sm:hidden">{sub.feedback ? 'Edit' : 'Grade'}</span>
-                              </Button>
-                              {sub.feedback && (
+                            </TableCell>
+                            <TableCell className="px-4">
+                              <Badge variant="outline" className={`text-[10px] font-bold border px-2 ${statusConfig.color}`}>
+                                {statusConfig.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                              {(() => {
+                                const dateStr = sub.submitted_at || sub.created_at;
+                                return dateStr ? new Date(dateStr).toLocaleDateString() : '-';
+                              })()}
+                            </TableCell>
+                            <TableCell className="px-4">
+                              {sub.feedback ? (
+                                <span className={sub.feedback.score >= 50 ? "text-green-600 font-bold text-xs" : "text-red-600 font-bold text-xs"}>
+                                  {sub.feedback.score}/100
+                                </span>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell className="text-right pr-6">
+                              <div className="flex justify-end items-center gap-2">
+                                {sub.task_url && (
+                                  <Button variant="outline" size="sm" asChild className="h-8 px-3 gap-1.5 text-[10px] font-bold uppercase hover:text-primary hover:bg-primary/5">
+                                    <a href={sub.task_url} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      Review Task
+                                    </a>
+                                  </Button>
+                                )}
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setFeedbackToDelete(sub.feedback!.id);
-                                    setIsFeedbackDeleteDialogOpen(true);
-                                  }}
-                                  disabled={isDeletingFeedback}
-                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 hidden sm:flex"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openFeedbackDialog(sub)}
+                                  disabled={!['SUBMITTED', 'submitted', 'sub', 'reviewed', 'REVIEWED'].includes(sub.status)}
+                                  className="h-8 px-3 text-[10px] font-bold uppercase bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground border-primary"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  {sub.feedback ? 'Edit Grade' : 'Grade'}
                                 </Button>
-                              )}
+                                {sub.feedback && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setFeedbackToDelete(sub.feedback!.id);
+                                      setIsFeedbackDeleteDialogOpen(true);
+                                    }}
+                                    disabled={isDeletingFeedback}
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="sm:hidden space-y-3 px-1">
+                  {adminSubmissions.map((sub) => {
+                    const user = typeof sub.user === 'object' && sub.user !== null
+                      ? sub.user
+                      : { id: sub.user, first_name: 'Member', last_name: `#${sub.user}`, email: '' };
+
+                    const getStatusConfig = (status: string) => {
+                      let s = status?.toLowerCase() || '';
+                      if (['pending', 'pen'].includes(s) && isDeadlinePassed) s = 'missed';
+
+                      if (['submitted', 'sub', 'reviewed'].includes(s)) {
+                        return { color: 'bg-green-500/15 text-green-700 border-green-500/20', label: 'Submitted' };
+                      }
+                      if (['pending', 'pen'].includes(s)) {
+                        return { color: 'bg-yellow-500/15 text-yellow-700 border-yellow-500/20', label: 'Pending' };
+                      }
+                      if (['missed', 'mis'].includes(s)) {
+                        return { color: 'bg-red-500/15 text-red-700 border-red-500/20', label: 'Missed' };
+                      }
+                      return { color: 'bg-secondary text-secondary-foreground', label: status };
+                    };
+
+                    const statusConfig = getStatusConfig(sub.status);
+                    const dateStr = sub.submitted_at || sub.created_at;
+
+                    return (
+                      <div key={sub.id} className="p-4 rounded-xl border border-border/50 bg-muted/20 space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1 min-w-0">
+                            <div className="font-bold text-sm truncate">{user.first_name} {user.last_name}</div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                              <CalendarDays className="w-3 h-3" />
+                              {dateStr ? new Date(dateStr).toLocaleDateString() : '-'}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                          </div>
+                          <Badge variant="outline" className={`text-[9px] font-bold border px-2 py-0.5 ${statusConfig.color}`}>
+                            {statusConfig.label}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/50">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Score</span>
+                            <span className={sub.feedback ? (sub.feedback.score >= 50 ? "text-green-600 font-bold text-sm" : "text-red-600 font-bold text-sm") : "text-muted-foreground text-sm font-bold"}>
+                              {sub.feedback ? `${sub.feedback.score}/100` : '-'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            {sub.task_url && (
+                              <Button variant="outline" size="sm" asChild className="h-8 w-8 p-0 shrink-0">
+                                <a href={sub.task_url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              </Button>
+                            )}
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => openFeedbackDialog(sub)}
+                              disabled={!['SUBMITTED', 'submitted', 'sub', 'reviewed', 'REVIEWED'].includes(sub.status)}
+                              className="h-8 px-4 text-[10px] font-bold uppercase"
+                            >
+                              {sub.feedback ? 'Edit Grade' : 'Grade'}
+                            </Button>
+                            {sub.feedback && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  setFeedbackToDelete(sub.feedback!.id);
+                                  setIsFeedbackDeleteDialogOpen(true);
+                                }}
+                                disabled={isDeletingFeedback}
+                                className="h-8 w-8 p-0 shrink-0"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </CardContent>

@@ -52,7 +52,7 @@ export function FeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[95vw] sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="font-heading">
             {submission?.feedback ? 'Edit Feedback' : 'Give Feedback'}
@@ -82,16 +82,17 @@ export function FeedbackDialog({
               required
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-border/50">
             <Button 
               type="button" 
               variant="outline" 
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto order-1 sm:order-2">
               {isLoading ? 'Saving...' : 'Submit Feedback'}
             </Button>
           </div>

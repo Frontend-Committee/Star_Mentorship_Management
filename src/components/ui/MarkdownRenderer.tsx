@@ -10,7 +10,7 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
   if (!content) return null;
   
   return (
-    <div className={`prose prose-sm dark:prose-invert max-w-none ${className}`}>
+    <div className={`prose prose-sm dark:prose-invert max-w-none break-words ${className}`}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );
