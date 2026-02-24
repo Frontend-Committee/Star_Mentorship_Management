@@ -234,6 +234,7 @@ export function TaskDialog({
                 )}
                 {isFormatting ? 'Formatting...' : 'AI Format'}
               </Button>
+              
             </div>
             <Tabs defaultValue="edit" className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-9">
