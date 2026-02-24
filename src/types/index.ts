@@ -131,6 +131,14 @@ export interface TaskDetail extends Task {
   submissions: TaskSubmissionDetail[];
 }
 
+export interface FormatTaskPayload {
+  text: string;
+}
+
+export interface FormatTaskResponse {
+  markdown: string;
+}
+
 // --- Submission Types ---
 
 export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'MISSED' | 'pending' | 'submitted' | 'missed' | 'pen' | 'sub' | 'mis';

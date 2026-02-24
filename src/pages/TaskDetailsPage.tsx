@@ -624,7 +624,7 @@ export default function TaskDetailsPage() {
                       Mentor Comments
                     </Label>
                     <div className="bg-muted/50 p-4 rounded-lg text-sm leading-relaxed border">
-                      {mySubmission.feedback.note}
+                      <MarkdownRenderer content={mySubmission.feedback.note} />
                     </div>
                   </div>
                 </div>

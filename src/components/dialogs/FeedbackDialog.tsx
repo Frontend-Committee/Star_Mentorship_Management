@@ -72,7 +72,7 @@ export function FeedbackDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="note">Feedback Note</Label>
+            <Label htmlFor="note">Feedback Note <span className="text-[10px] text-muted-foreground font-normal">(Markdown supported)</span></Label>
             <Textarea
               id="note"
               value={note}

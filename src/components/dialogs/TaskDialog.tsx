@@ -13,8 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { useCommitteeMembers, useCommitteeGroups } from '@/features/members/hooks';
+import { useFormatTaskToMD } from '@/features/tasks/hooks';
 import { Task, TaskCreatePayload, CommitteeGroup } from '@/types';
-import { Loader2, Search, Users } from 'lucide-react';
+import { Loader2, Search, Users, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useEffect, useState, useMemo } from 'react';
 
@@ -43,6 +44,8 @@ export function TaskDialog({
   const { data: users, isLoading: isLoadingUsers } = useCommitteeMembers();
   const { data: groups, isLoading: isLoadingGroups } = useCommitteeGroups();
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<number | 'all'>('all');
+
+  const { mutate: formatToMD, isPending: isFormatting } = useFormatTaskToMD();
 
   // Filter members based on search query
   const filteredUsers = useMemo(() => {
@@ -174,6 +177,16 @@ export function TaskDialog({
     }
   };
 
+  const handleAIFormat = () => {
+    if (!description.trim()) return;
+    
+    formatToMD({ text: description }, {
+      onSuccess: (data) => {
+        setDescription(data.markdown);
+      }
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col p-4 sm:p-6 transition-all">
@@ -204,7 +217,24 @@ export function TaskDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description (Markdown Supported)</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="description">Description (Markdown Supported)</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAIFormat}
+                disabled={isFormatting || !description.trim()}
+                className="h-8 gap-2 text-xs border-primary/20 hover:bg-primary/5 hover:text-primary transition-all duration-300 group"
+              >
+                {isFormatting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 text-primary group-hover:animate-pulse" />
+                )}
+                {isFormatting ? 'Formatting...' : 'AI Format'}
+              </Button>
+            </div>
             <Tabs defaultValue="edit" className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-9">
                 <TabsTrigger value="edit" className="text-xs">Edit</TabsTrigger>

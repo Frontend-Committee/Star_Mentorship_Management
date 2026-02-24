@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Star, CheckCircle, Clock } from 'lucide-react';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { useSubmissions } from '@/features/submissions/hooks';
 import { SubmissionSkeleton } from '@/components/submissions/SubmissionSkeleton';
 import { useMemo } from 'react';
@@ -119,7 +120,7 @@ export default function Feedback() {
                 {submission.feedback?.note && (
                   <div className="pl-11">
                     <div className="p-4 rounded-lg bg-card border border-border">
-                      <p className="text-sm text-foreground">{submission.feedback.note}</p>
+                      <MarkdownRenderer content={submission.feedback.note} />
                     </div>
                   </div>
                 )}

@@ -8,9 +8,31 @@ import {
   TaskDetail,
   TaskSubmissionDetail,
   TaskUpdatePayload,
-  PaginatedResponse
+  PaginatedResponse,
+  FormatTaskPayload,
+  FormatTaskResponse
 } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+export const useFormatTaskToMD = () => {
+  return useMutation({
+    mutationFn: async (data: FormatTaskPayload) => {
+      const response = await api.post<FormatTaskResponse>('admin/chat/format/task/', data);
+      return response.data;
+    },
+    onError: (error: unknown) => {
+      const errorData =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: unknown } }).response?.data
+          : undefined;
+      let errorMessage = "Failed to format task. Please try again.";
+      if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      }
+      toast(errorMessage);
+    }
+  });
+};
 
 export const useAdminTasks = (params?: { page?: number } | { enabled?: boolean }, options?: { enabled?: boolean }) => {
   const actualParams = params && 'page' in params ? params : undefined;
