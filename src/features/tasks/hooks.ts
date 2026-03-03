@@ -34,18 +34,30 @@ export const useFormatTaskToMD = () => {
   });
 };
 
-export const useAdminTasks = (params?: { page?: number } | { enabled?: boolean }, options?: { enabled?: boolean }) => {
-  const actualParams = params && 'page' in params ? params : undefined;
+export const useAdminTasks = (params?: Record<string, string | number | boolean | undefined>, options?: { enabled?: boolean }) => {
+  const actualParams = params && !('enabled' in params) ? params : undefined;
   const actualOptions = options || (params && 'enabled' in params ? (params as { enabled?: boolean }) : undefined);
 
   return useQuery({
     queryKey: ['admin-tasks', actualParams],
     queryFn: async () => {
-      const response = await api.get<PaginatedResponse<Task> | Task[]>('admin/tasks/', { params: actualParams });
+      // Support both limit and page_size for different backend configurations
+      const queryParams = { ...actualParams };
+      if (queryParams.limit) queryParams.page_size = queryParams.limit;
+      
+      const response = await api.get<PaginatedResponse<Task> | Task[]>('admin/tasks/', { params: queryParams });
       const data = response.data;
+      
       if (data && typeof data === 'object' && 'results' in data) {
-        return data as PaginatedResponse<Task>;
+        const paginatedData = data as { results?: Task[], count?: number, total?: number, total_count?: number, next?: string | null, previous?: string | null };
+        return {
+          results: paginatedData.results || [],
+          count: paginatedData.count ?? paginatedData.total ?? paginatedData.total_count ?? (paginatedData.results?.length || 0),
+          next: paginatedData.next,
+          previous: paginatedData.previous
+        } as PaginatedResponse<Task>;
       }
+      
       if (Array.isArray(data)) {
         return {
           results: data as Task[],
@@ -238,18 +250,30 @@ export const useAdminFeedbackDetails = (id: number) => {
   });
 };
 
-export const useMemberTasks = (params?: { page?: number } | { enabled?: boolean }, options?: { enabled?: boolean }) => {
-  const actualParams = params && 'page' in params ? params : undefined;
+export const useMemberTasks = (params?: Record<string, string | number | boolean | undefined>, options?: { enabled?: boolean }) => {
+  const actualParams = params && !('enabled' in params) ? params : undefined;
   const actualOptions = options || (params && 'enabled' in params ? (params as { enabled?: boolean }) : undefined);
 
   return useQuery({
     queryKey: ['member-tasks', actualParams],
     queryFn: async () => {
-      const response = await api.get<PaginatedResponse<Task> | Task[]>('member/tasks/', { params: actualParams });
+      // Support both limit and page_size
+      const queryParams = { ...actualParams };
+      if (queryParams.limit) queryParams.page_size = queryParams.limit;
+
+      const response = await api.get<PaginatedResponse<Task> | Task[]>('member/tasks/', { params: queryParams });
       const data = response.data;
+
       if (data && typeof data === 'object' && 'results' in data) {
-        return data as PaginatedResponse<Task>;
+        const paginatedData = data as { results?: Task[], count?: number, total?: number, total_count?: number, next?: string | null, previous?: string | null };
+        return {
+          results: paginatedData.results || [],
+          count: paginatedData.count ?? paginatedData.total ?? paginatedData.total_count ?? (paginatedData.results?.length || 0),
+          next: paginatedData.next,
+          previous: paginatedData.previous
+        } as PaginatedResponse<Task>;
       }
+
       if (Array.isArray(data)) {
         return {
           results: data as Task[],
