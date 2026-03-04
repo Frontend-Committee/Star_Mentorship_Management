@@ -242,21 +242,24 @@ export default function TaskDetailsPage() {
           <CardContent className="space-y-6">
             <MarkdownRenderer content={task.description} />
             
-            {task.link && (
+            {task.links && task.links.length > 0 && (
               <div className="pt-4 border-t border-border/50">
                 <div className="flex flex-col gap-2">
                   <Label className="text-xs uppercase text-muted-foreground font-bold tracking-wider">Reference Link</Label>
-                  <a 
-                    href={task.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors w-fit group"
-                  >
-                    <div className="p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                      <ExternalLink className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-medium underline underline-offset-4 break-all">{task.link}</span>
-                  </a>
+                  {task.links.map((linkObj, i) => (
+                    <a 
+                      key={linkObj.id || i}
+                      href={linkObj.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors w-fit group"
+                    >
+                      <div className="p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                        <ExternalLink className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-medium underline underline-offset-4 break-all">{linkObj.title || linkObj.url}</span>
+                    </a>
+                  ))}
                 </div>
               </div>
             )}

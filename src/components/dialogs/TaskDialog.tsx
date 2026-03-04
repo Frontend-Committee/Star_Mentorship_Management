@@ -78,7 +78,7 @@ export function TaskDialog({
     if (open && task) {
       setTitle(task.title || '');
       setDescription(task.description || '');
-      setLink(task.link || '');
+      setLink(task.links?.[0]?.url || '');
       if (task.date) {
         setDate(task.date.split('T')[0]);
       }
@@ -114,14 +114,19 @@ export function TaskDialog({
     // Convert date to ISO format for backend (YYYY-MM-DDThh:mm:ssZ)
     const isoDate = new Date(date).toISOString();
 
-    onSubmit({
+    const payload: TaskCreatePayload = {
       title: title.trim(),
       description: description.trim(),
       date: isoDate,
-      link: link.trim() || null,
       users: selectedUsers,
       assigned_to: selectedUsers,
-    });
+    };
+    
+    if (link.trim()) {
+      payload.links = [{ title: 'Resource Link', url: link.trim() }];
+    }
+
+    onSubmit(payload);
   };
 
   const toggleUser = (userId: number) => {

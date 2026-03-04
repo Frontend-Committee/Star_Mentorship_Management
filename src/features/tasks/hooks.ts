@@ -175,6 +175,89 @@ export const useAdminSubmissions = (params?: { page?: number } | { enabled?: boo
   });
 };
 
+// Fetches all tasks across all pages (for client-side filtering)
+export const useAllAdminTasks = (params?: { search?: string }, options?: { enabled?: boolean }) => {
+  return useQuery({
+    queryKey: ['admin-tasks-all', params?.search],
+    queryFn: async () => {
+      const searchParam = params?.search ? `&search=${encodeURIComponent(params.search)}` : '';
+      let url = `admin/tasks/?page_size=100${searchParam}`;
+      let allResults: Task[] = [];
+      let pageCount = 0;
+      const MAX_PAGES = 50;
+
+      while (url && pageCount < MAX_PAGES) {
+        const response = await api.get<PaginatedResponse<Task> | Task[]>(url);
+        const data = response.data;
+        
+        if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+          allResults = [...allResults, ...data.results];
+          if (data.next) {
+            try {
+              const nextUrl = new URL(data.next);
+              const pathParts = nextUrl.pathname.split('/api/');
+              url = pathParts.length > 1 ? pathParts[1] + nextUrl.search : nextUrl.pathname + nextUrl.search;
+            } catch (e) {
+              url = '';
+            }
+          } else {
+            url = '';
+          }
+        } else if (Array.isArray(data)) {
+          return data;
+        } else {
+          url = '';
+        }
+        pageCount++;
+      }
+      return allResults;
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 30000,
+  });
+};
+
+// Fetches all submissions at once (loops through all pages) for building task→user maps
+export const useAllAdminSubmissions = (options?: { enabled?: boolean }) => {
+  return useQuery({
+    queryKey: ['admin-submissions-all'],
+    queryFn: async () => {
+      let url = 'admin/submissions/?page_size=100';
+      let allResults: TaskSubmissionDetail[] = [];
+      let pageCount = 0;
+      const MAX_PAGES = 50;
+
+      while (url && pageCount < MAX_PAGES) {
+        const response = await api.get<PaginatedResponse<TaskSubmissionDetail> | TaskSubmissionDetail[]>(url);
+        const data = response.data;
+        
+        if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+          allResults = [...allResults, ...data.results];
+          if (data.next) {
+            try {
+              const nextUrl = new URL(data.next);
+              const pathParts = nextUrl.pathname.split('/api/');
+              url = pathParts.length > 1 ? pathParts[1] + nextUrl.search : nextUrl.pathname + nextUrl.search;
+            } catch (e) {
+              url = '';
+            }
+          } else {
+            url = '';
+          }
+        } else if (Array.isArray(data)) {
+          return data;
+        } else {
+          url = '';
+        }
+        pageCount++;
+      }
+      return allResults;
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 60_000, // cache for 1 min
+  });
+};
+
 export const useAdminSubmission = (id: number) => {
   return useQuery({
     queryKey: ['admin-submissions', id],

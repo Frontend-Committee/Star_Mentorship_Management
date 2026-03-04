@@ -99,12 +99,18 @@ export interface SetPasswordPayload {
 
 // --- Task Types ---
 
+export interface TaskLink {
+  id?: number;
+  title: string;
+  url: string;
+}
+
 export interface Task {
   id: number;
   title: string;
   description: string;
   date: string;
-  link?: string | null;
+  links?: TaskLink[];
   created_at?: string;
   updated_at?: string;
   assigned_to?: number[];
@@ -114,7 +120,7 @@ export interface TaskCreatePayload {
   title: string;
   description: string;
   date: string;
-  link?: string | null;
+  links?: TaskLink[];
   users?: number[];  // Used by backend for creation
   assigned_to?: number[]; // Used for display/edit if needed, but backend expects 'users' for creation
 }
@@ -123,7 +129,7 @@ export interface TaskUpdatePayload {
   title?: string;
   description?: string;
   date?: string;
-  link?: string | null;
+  links?: TaskLink[];
   assigned_to?: number[];
 }
 
