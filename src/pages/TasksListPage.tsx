@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCommitteeMembers } from '@/features/members/hooks';
 import { useAdminTasks, useCreateTask, useMemberTasks, useAllAdminSubmissions, useAllAdminTasks } from '@/features/tasks/hooks';
 import { TaskCreatePayload } from '@/types';
-import { CalendarDays, ChevronRight, LayoutList, Loader2, Plus, ChevronLeft, Search, X, ExternalLink, Users, ChevronDown } from 'lucide-react';
+import { CalendarDays, ChevronRight, LayoutList, Loader2, Plus, ChevronLeft, Search, X, ExternalLink, Users, ChevronDown, CheckCircle2, MessageSquare, Target, Activity } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -140,6 +140,47 @@ export default function TasksListPage() {
   const isLoading = isDataLoading && !responseData;
   const totalPages = Math.ceil(totalFilteredCount / pageSize);
 
+  // Stats calculation
+  const stats = useMemo(() => {
+    if (!isAdmin) return null;
+    const tasksData = selectedMemberId !== null ? adminTasksAll : adminTasksPaged;
+    const totalTasks = Array.isArray(tasksData) ? tasksData.length : (tasksData?.count || 0);
+    const totalSubmissions = allSubmissions?.length || 0;
+    const uniqueMembers = committeeMembers?.length || 0;
+    const completionRate = totalTasks > 0 ? Math.round((totalSubmissions / (totalTasks * (uniqueMembers || 1))) * 100) : 0;
+    
+    return [
+      { 
+        label: 'Total Tasks', 
+        value: totalTasks, 
+        icon: Target, 
+        color: 'from-blue-500 to-indigo-600',
+        description: 'Total tasks assigned'
+      },
+      { 
+        label: 'Submissions', 
+        value: totalSubmissions, 
+        icon: CheckCircle2, 
+        color: 'from-emerald-500 to-teal-600',
+        description: 'Total work submitted'
+      },
+      { 
+        label: 'Committee', 
+        value: uniqueMembers, 
+        icon: Users, 
+        color: 'from-purple-500 to-pink-600',
+        description: 'Total active members'
+      },
+      { 
+        label: 'Completion', 
+        value: `${completionRate > 100 ? 100 : completionRate}%`, 
+        icon: Activity, 
+        color: 'from-orange-500 to-amber-600',
+        description: 'Average task completion'
+      }
+    ];
+  }, [isAdmin, adminTasksAll, adminTasksPaged, selectedMemberId, allSubmissions, committeeMembers]);
+
   const handlePageChange = (newPage: number) => {
     setSearchParams(prev => {
       prev.set('page', newPage.toString());
@@ -187,6 +228,30 @@ export default function TasksListPage() {
           </Button>
         )}
       </div>
+
+      {isAdmin && stats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
+          {stats.map((stat, i) => (
+            <Card key={stat.label} className="relative overflow-hidden group hover:shadow-lg transition-all border-none bg-gradient-to-br from-card to-card/50" style={{ animationDelay: `${i * 100}ms` }}>
+              <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 bg-gradient-to-br ${stat.color} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`} />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-2 rounded-xl bg-gradient-to-br ${stat.color} text-white shadow-lg shadow-primary/20`}>
+                    <stat.icon className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{stat.label}</h3>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold tracking-tight">{stat.value}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/80">{stat.description}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Search and Filter Row */}
       <div className="flex flex-col sm:flex-row gap-3">
