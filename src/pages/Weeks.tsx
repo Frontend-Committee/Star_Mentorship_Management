@@ -54,6 +54,20 @@ export default function Weeks() {
   const [viewItemId, setViewItemId] = useState<number | null>(null);
   const [deleteWeekId, setDeleteWeekId] = useState<number | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
+  // UI-only state: tracks which weeks admin has marked as done
+  const [adminDoneWeeks, setAdminDoneWeeks] = useState<Set<string>>(new Set());
+
+  const toggleAdminWeekDone = (weekId: string) => {
+    setAdminDoneWeeks(prev => {
+      const next = new Set(prev);
+      if (next.has(weekId)) {
+        next.delete(weekId);
+      } else {
+        next.add(weekId);
+      }
+      return next;
+    });
+  };
   
   // Mutations
   const deleteWeek = useDeleteWeek();
@@ -359,23 +373,27 @@ export default function Weeks() {
             return (
               <Card
                 key={week.id}
-                className={`border-border/50 animate-fade-in overflow-hidden ${
+                className={`border-border/50 animate-fade-in overflow-hidden transition-colors duration-300 ${
                   isLocked ? 'opacity-60' : ''
-                } ${week.isCompleted && !isAdmin ? 'border-green-200 dark:border-green-800/30' : ''}`}
+                } ${
+                  (week.isCompleted && !isAdmin) || (isAdmin && adminDoneWeeks.has(week.id))
+                    ? 'border-green-200 dark:border-green-800/30'
+                    : ''
+                }`}
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value={week.id} className="border-0">
                     <AccordionTrigger className="px-4 sm:px-6 py-6 hover:no-underline hover:bg-muted/30 group transition-all">
                       <div className="flex items-center gap-4 sm:gap-6 text-left flex-1 min-w-0">
-                        <div className={`p-3 rounded-xl shrink-0 shadow-sm transition-transform group-hover:scale-110 ${
-                          week.isCompleted 
-                            ? 'bg-green-500/10 text-green-500' 
-                            : isLocked 
-                              ? 'bg-muted text-muted-foreground' 
+                        <div className={`p-3 rounded-xl shrink-0 shadow-sm transition-all duration-300 group-hover:scale-110 ${
+                          (week.isCompleted && !isAdmin) || (isAdmin && adminDoneWeeks.has(week.id))
+                            ? 'bg-green-500/10 text-green-500'
+                            : isLocked
+                              ? 'bg-muted text-muted-foreground'
                               : 'bg-primary/10 text-primary'
                         }`}>
-                          {week.isCompleted ? (
+                          {(week.isCompleted && !isAdmin) || (isAdmin && adminDoneWeeks.has(week.id)) ? (
                             <CheckCircle2 className="w-6 h-6" />
                           ) : isLocked ? (
                             <Lock className="w-6 h-6" />
@@ -393,6 +411,13 @@ export default function Weeks() {
                             >
                               Week {week.weekNumber}
                             </Badge>
+                            {/* Admin-marked done badge */}
+                            {isAdmin && adminDoneWeeks.has(week.id) && (
+                              <Badge className="text-[10px] font-bold uppercase tracking-wider px-2 py-0 h-5 bg-green-500 hover:bg-green-600">
+                                <CheckCircle2 className="w-2.5 h-2.5 mr-1" />
+                                Done
+                              </Badge>
+                            )}
                             {week.assignmentSubmitted && !isAdmin && (
                               <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0 h-5 text-green-600 border-green-500/30 bg-green-500/5">
                                 Submitted
@@ -653,21 +678,49 @@ export default function Weeks() {
 
                           {/* Admin Control Bar */}
                           {isAdmin && (
-                            <div className="pt-4 border-t border-border/50 flex flex-wrap gap-2 justify-end">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="text-xs font-semibold h-8 border-primary/30 text-primary hover:bg-primary/5"
-                                onClick={() => {
-                                  const id = parseInt(week.id.toString().replace('week-', ''));
-                                  if (!isNaN(id)) {
-                                    setAddItemWeek({ id, title: week.title });
-                                  }
-                                }}
-                              >
-                                <Plus className="w-3.5 h-3.5 mr-1.5" />
-                                Add New Content
-                              </Button>
+                            <div className="pt-4 border-t border-border/50 flex flex-wrap gap-2 justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.2em]">
+                                Admin Controls
+                              </span>
+                              <div className="flex flex-wrap gap-2">
+                                {/* Mark Week as Done toggle — UI only */}
+                                {adminDoneWeeks.has(week.id) ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs font-semibold h-8 bg-green-500/10 text-green-500 border border-green-500/25 hover:bg-green-500/20 hover:text-green-400 transition-all"
+                                    onClick={() => toggleAdminWeekDone(week.id)}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-green-500" />
+                                    Week Done
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs font-semibold h-8 border-border/50 text-muted-foreground hover:border-green-500/40 hover:text-green-500 hover:bg-green-500/5 transition-all"
+                                    onClick={() => toggleAdminWeekDone(week.id)}
+                                  >
+                                    <Circle className="w-3.5 h-3.5 mr-1.5" />
+                                    Mark as Done
+                                  </Button>
+                                )}
+
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="text-xs font-semibold h-8 border-primary/30 text-primary hover:bg-primary/5"
+                                  onClick={() => {
+                                    const id = parseInt(week.id.toString().replace('week-', ''));
+                                    if (!isNaN(id)) {
+                                      setAddItemWeek({ id, title: week.title });
+                                    }
+                                  }}
+                                >
+                                  <Plus className="w-3.5 h-3.5 mr-1.5" />
+                                  Add New Content
+                                </Button>
+                              </div>
                             </div>
                           )}
 
