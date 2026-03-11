@@ -54,8 +54,16 @@ export default function Weeks() {
   const [viewItemId, setViewItemId] = useState<number | null>(null);
   const [deleteWeekId, setDeleteWeekId] = useState<number | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
-  // UI-only state: tracks which weeks admin has marked as done
-  const [adminDoneWeeks, setAdminDoneWeeks] = useState<Set<string>>(new Set());
+  // UI-only state: tracks which weeks admin has marked as done — persisted in localStorage
+  const STORAGE_KEY = 'adminDoneWeeks';
+  const [adminDoneWeeks, setAdminDoneWeeks] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
 
   const toggleAdminWeekDone = (weekId: string) => {
     setAdminDoneWeeks(prev => {
@@ -64,6 +72,11 @@ export default function Weeks() {
         next.delete(weekId);
       } else {
         next.add(weekId);
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
+      } catch {
+        // ignore storage errors
       }
       return next;
     });
