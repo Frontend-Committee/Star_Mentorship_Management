@@ -80,7 +80,12 @@ export function TaskDialog({
       setDescription(task.description || '');
       setLink(task.links?.[0]?.url || '');
       if (task.date) {
-        setDate(task.date.split('T')[0]);
+        // Parse date locally so 23:59:59 etc isn't pushed to the next day by simple split
+        const localDate = new Date(task.date);
+        const yyyy = localDate.getFullYear();
+        const mm = String(localDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(localDate.getDate()).padStart(2, '0');
+        setDate(`${yyyy}-${mm}-${dd}`);
       }
       
       let userIds: number[] = [];
@@ -111,8 +116,8 @@ export function TaskDialog({
     e.preventDefault();
     if (!title.trim() || !date) return;
 
-    // Convert date to ISO format for backend (YYYY-MM-DDThh:mm:ssZ)
-    const isoDate = new Date(date).toISOString();
+    // Convert date to ISO format for backend (YYYY-MM-DDThh:mm:ssZ) pulling it to end of day
+    const isoDate = new Date(`${date}T23:59:59`).toISOString();
 
     const payload: TaskCreatePayload = {
       title: title.trim(),
